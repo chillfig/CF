@@ -45,6 +45,32 @@ typedef struct CF_PollDir
     uint8 enabled; /**< \brief Enabled flag */
 } CF_PollDir_t;
 
+/** \brief Enum names & their values for various connection types. */
+enum CF_ChanConnTypeEnum
+{
+    CF_SB_CHANNEL  = 0,  /**< \brief this channel communicates over SB */
+    CF_UDP_CHANNEL = 1,  /**< \brief this channel communicates over UDP */
+};
+
+/** \brief Data type for SBNG_MsgBufTypeEnum to bound its data size. */
+typedef uint8 CF_ChanConnTypeEnum_t;
+
+/** \brief A socket address for a UDP connection. */
+typedef struct
+{
+    uint16 port;                             /**< \brief The network port */
+    uint8 padding[2];                        /**< \brief Padding */
+    char  hostname[CF_MAX_HOSTNAME_LENGTH];  /**< \brief The network hostname or IP address */
+} CF_UDP_SocketAddress_t;
+
+/** \brief The UDP specific information describing a connection. */
+typedef struct
+{
+    CF_UDP_SocketAddress_t my_address;     /**< \brief The socket address for this SBNg instance */
+    CF_UDP_SocketAddress_t the_other_addr;  /**< \brief The socket address for the other UDP endpoint */ 
+    osal_id_t sock_id;                     /**< \brief Socket ID */
+} CF_UDP_ConnectionData_t;
+
 /**
  * \brief Configuration entry for CFDP channel
  */
@@ -67,7 +93,10 @@ typedef struct CF_ChannelConfig
 
     CF_PollDir_t polldir[CF_MAX_POLLING_DIR_PER_CHAN]; /**< \brief Configuration for polled directories */
 
-    char  sem_name[OS_MAX_API_NAME]; /**< \brief name of throttling semaphore in TO */
+    CF_UDP_ConnectionData_t udp_config;    /**< \brief info for this channel's direct UDP connection */
+    CF_ChanConnTypeEnum_t connection_type; /**< \brief CF_UDP_CHANNEL or CF_SB_CHANNEL */
+
+    char  sem_name[OS_MAX_API_NAME]; /**< \brief name of throttling semaphore in TO; if empty, no throttle */
     uint8 dequeue_enabled;           /**< \brief if 1, then the channel will make pending transactions active */
     char  move_dir[OS_MAX_PATH_LEN]; /**< \brief Move directory if not empty */
 } CF_ChannelConfig_t;
