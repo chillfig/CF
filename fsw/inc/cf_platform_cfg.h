@@ -85,9 +85,9 @@ typedef uint32 CF_TransactionSeq_t;
  *       Dictates the pipe depth of the cf command pipe.
  *
  *  @par Limits:
- *		 The minimum size of this parameter is 1
- *       The maximum size dictated by cFE platform configuration
- *		 parameter is CFE_SB_MAX_PIPE_DEPTH
+ *		 The minimum size of this parameter is 1.
+ *       32 is a Recommended default value determined by Gateway L2 FSW group.
+ *       <= OS_QUEUE_MAX_DEPTH is a Requirement determined by Gateway L2 FSW group.
  */
 #define CF_PIPE_DEPTH (32)
 
@@ -100,8 +100,10 @@ typedef uint32 CF_TransactionSeq_t;
  *
  *  @par Limits:
  *       Must be less <= 200. Obviously it will be smaller than that.
+ *       7 is a Recommended default value determined by Gateway L2 FSW group.
+ *       >= 7 is a Requirement determined by Gateway L2 FSW group.
  */
-#define CF_NUM_CHANNELS (2)
+#define CF_NUM_CHANNELS (7)
 
 /**
  *  @brief Max NAK segments supported in a NAK PDU
@@ -176,9 +178,10 @@ typedef uint32 CF_TransactionSeq_t;
  *       This is the max number of outstanding ground commanded file transmits per channel.
  *
  *  @par Limits:
- *
+ *       4 is a Recommended default value determined by Gateway L2 FSW group.
+ *       >= 2 is a Requirement determined by Gateway L2 FSW group.
  */
-#define CF_MAX_COMMANDED_PLAYBACK_FILES_PER_CHAN (10)
+#define CF_MAX_COMMANDED_PLAYBACK_FILES_PER_CHAN (4)
 
 /**
  *  @brief Max number of simultaneous file receives.
@@ -187,9 +190,10 @@ typedef uint32 CF_TransactionSeq_t;
  *       Each channel can support this number of file receive transactions at a time.
  *
  *  @par Limits:
- *
+ *       4 is a Recommended default value determined by Gateway L2 FSW group.
+ *       >= 2 is a Requirement determined by Gateway L2 FSW group.
  */
-#define CF_MAX_SIMULTANEOUS_RX (5)
+#define CF_MAX_SIMULTANEOUS_RX (4)
 
 /* definitions that affect execution */
 
@@ -250,10 +254,13 @@ typedef uint32 CF_TransactionSeq_t;
  *       is different for each channel so a smaller size can be used.
  *
  *  @par Limits:
- *
+ *       1412 is a Required default value determined by Gateway L2 FSW group.
+ * 
+ *  @note
+ *      This value should be a multiple of 4 for data alignment.
  */
 /* CF_MAX_PDU_SIZE must be the max possible PDU for any channel. Channels can be configured with a smaller max. */
-#define CF_MAX_PDU_SIZE (512)
+#define CF_MAX_PDU_SIZE (1412)
 
 /**
  *  @brief Name of the CF Configuration Table
@@ -304,6 +311,22 @@ typedef uint32 CF_TransactionSeq_t;
 #define CF_FILENAME_MAX_LEN (CF_FILENAME_MAX_NAME + CF_FILENAME_MAX_PATH)
 
 /**
+ * \platform_cfg Maximum length for a hostname
+ * 
+ * \par Description:
+ *      The maximum number of characters for a hostname, including the 
+ *      string-terminated character. Must be long enough to store an IP address
+ *      followed by a null-terminated character.
+ * 
+ * \par Limits:
+ *      16 <= value
+ * 
+ * \note
+ *      This value should be a multiple of 4 for data alignment.
+ */
+#define CF_MAX_HOSTNAME_LENGTH  (64)
+
+/**
  *  @brief R2 CRC calc chunk size
  *
  *  @par Description
@@ -313,9 +336,13 @@ typedef uint32 CF_TransactionSeq_t;
  *       is set in the configuration table.
  *
  *  @par Limits:
- *
+ *        2048 is a Recommended default value determined by Gateway L2 FSW group.
+ * 
+ *  @note 
+ *      Increasing this value increases a buffer declared on the stack, so a
+ *      corresponding increase in the stack allocation for this app should be required.
  */
-#define CF_R2_CRC_CHUNK_SIZE (1024)
+#define CF_R2_CRC_CHUNK_SIZE (2048)
 
 #if CF_FILENAME_MAX_LEN > OS_MAX_PATH_LEN
 #error CF_FILENAME_MAX_LEN must be <= OS_MAX_PATH_LEN
@@ -365,10 +392,11 @@ typedef uint32 CF_TransactionSeq_t;
  *      encapsulates only the CFDP PDU and no extra bytes are added.
  *
  *  @par Limits:
- *       Maximum value is the difference between the maximum size of a CFDP PDU and the
- *       maximum size of an SB message.
+ *       Maximum value is the difference between the maximum size of
+ *       a CFDP PDU and the maximum size of an SB message.
+ *       4 is a Required default value determined by Gateway L2 FSW group.
  */
-#define CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES 0
+#define CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES 4
 
 /**
  * \brief Mission specific version number
@@ -381,10 +409,10 @@ typedef uint32 CF_TransactionSeq_t;
  *       that missions can manage as a configuration definition
  *
  *  \par Limits:
- *       Must be defined as a numeric value that is greater than
- *       or equal to zero.
+ *       Must be defined as a numeric value that is greater than or equal to zero.
+ *       1 is a Recommended default value determined by Gateway L2 FSW group.
  */
-#define CF_MISSION_REV 0
+#define CF_MISSION_REV 1
 
 /**\}*/
 
