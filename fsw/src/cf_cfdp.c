@@ -1609,6 +1609,13 @@ void CF_CFDP_ResetTransaction(CF_Transaction_t *t, int keep_history)
     CF_Channel_t *c      = &CF_AppData.engine.channels[t->chan_num];
     CF_Assert(t->chan_num < CF_NUM_CHANNELS);
 
+    if ( t->flags.com.q_index == CF_QueueIdx_FREE)
+    {
+        CFE_EVS_SendEvent(CF_EID_DBG_RESET_FREED_XACT, CFE_EVS_EventType_DEBUG,
+                          "CF: attempt to reset a transaction that has already been freed");
+        return;
+    }
+
     CF_CFDP_SendEotPkt(t);
 
     CF_DequeueTransaction(t);
