@@ -1517,6 +1517,81 @@
  */
 #define CF_EID_ERR_CMD_PURGE_QUEUE (165)
 
+/**************************************************************************
+ * CF JSC added event IDs - Initialization
+ */
+
+/**
+ * \brief CF Channel Initialize UDP Connection Failed Event ID
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Failure from UDP initialize connection call during engine channel initialization
+ */
+#define CF_EID_ERR_INIT_UDP (170)
+
+/**
+ * \brief CF Channel Config Table Invalid Connection Type Event ID
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Config table has a channel with an invalid connection type
+ */
+#define CF_EID_ERR_INIT_CONN_TYPE (171)
+
+/**************************************************************************
+ * CF JSC added event IDs - Protocol data unit
+ */
+
+/**
+ * \brief CF PDU Send Failure
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Channel fails when sending a PDU message over either SB or UDP
+ */
+#define CF_EID_ERR_CFDP_SEND  (180)
+
+/**
+ * \brief CF PDU UDP Receive Failure
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  UDP channel fails to receive a PDU message off its UDP socket
+ *  This does not include the nominal case where there is nothing left to read from the UDP socket
+ */
+#define CF_EID_ERR_CFDP_UDP_RECV  (181)
+
+/**
+ * \brief CF PDU Received With Invalid SPP CRC
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  PDU message is received over UDP with a CRC doesn't match the expected CRC of the space-packet message
+ */
+#define CF_EID_ERR_CFDP_SPP_CRC  (182)
+
+/**
+ * \brief CF PDU Received Invalid Input Mid
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  UDP channel receives a PDU message with a mid that doesn't match the channel's designated input mid
+ */
+#define CF_EID_ERR_CFDP_INVALID_MID  (183)
+
 /**\}*/
 
 #endif /* !CF_EVENTS_H */

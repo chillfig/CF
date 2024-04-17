@@ -29,6 +29,7 @@
 #include "cfe.h"
 #include "cf_platform_cfg.h"
 #include "cf_perfids.h"
+#include "cf_app.h"
 
 /* limit number of channels to a reasonable amount for special values for some commands */
 #if CF_NUM_CHANNELS > 250
@@ -46,5 +47,10 @@
 #if (CF_PERF_ID_PDURCVD(CF_NUM_CHANNELS - 1) >= CF_PERF_ID_PDUSENT(0))
 #error Collision between CF_PERF_ID_PDURCVD and CF_PERF_ID_PDUSENT given number of channels
 #endif
+
+/* Guarantees that the string concatenation of CF_CHANNEL_PIPE_PREFIX and CF_NUM_CHANNELS is less than 64 characters,
+   since CF_NUM_CHANNELS cannot exceed 250 (verified earlier in this file), so its length cannot exceed 3.
+   Therefore, CF_CHANNEL_PIPE_PREFIX must be limited to no longer than 60 characters. */
+CompileTimeAssert(sizeof(CF_CHANNEL_PIPE_PREFIX) <= 60, CF_CHANNEL_PIPE_PREFIX_TOO_LONG);
 
 #endif /* !CF_VERIFY_H */

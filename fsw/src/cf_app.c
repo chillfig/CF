@@ -117,22 +117,39 @@ CFE_Status_t CF_ValidateConfigTable(void *tbl_ptr)
     if (!tbl->ticks_per_second)
     {
         CFE_EVS_SendEvent(CF_EID_ERR_INIT_TPS, CFE_EVS_EventType_ERROR, "CF: config table has zero ticks per second");
+        goto CF_ValidateConfigTable_Exit_Tag;
     }
-    else if (!tbl->rx_crc_calc_bytes_per_wakeup || (tbl->rx_crc_calc_bytes_per_wakeup & 0x3ff))
+    
+    if (!tbl->rx_crc_calc_bytes_per_wakeup || (tbl->rx_crc_calc_bytes_per_wakeup & 0x3ff))
     {
         CFE_EVS_SendEvent(CF_EID_ERR_INIT_CRC_ALIGN, CFE_EVS_EventType_ERROR,
                           "CF: config table has rx CRC size not aligned with 1024");
+        goto CF_ValidateConfigTable_Exit_Tag;
     }
-    else if (tbl->outgoing_file_chunk_size > sizeof(CF_CFDP_PduFileDataContent_t))
+    
+    if (tbl->outgoing_file_chunk_size > sizeof(CF_CFDP_PduFileDataContent_t))
     {
         CFE_EVS_SendEvent(CF_EID_ERR_INIT_OUTGOING_SIZE, CFE_EVS_EventType_ERROR,
                           "CF: config table has outgoing file chunk size too large");
-    }
-    else
-    {
-        ret = CFE_SUCCESS;
+        goto CF_ValidateConfigTable_Exit_Tag;
     }
 
+    for (int chan_num = 0; chan_num < CF_NUM_CHANNELS; ++chan_num)
+    {
+        if ((tbl->chan[chan_num].connection_type != CF_SB_CHANNEL) &&
+            (tbl->chan[chan_num].connection_type != CF_UDP_CHANNEL))
+        {
+            CFE_EVS_SendEvent(CF_EID_ERR_INIT_CONN_TYPE, CFE_EVS_EventType_ERROR,
+                                "CF: config table channel %d has invalid connection type (%d)",
+                                chan_num, tbl->chan[chan_num].connection_type);
+            goto CF_ValidateConfigTable_Exit_Tag;
+        }
+    }
+
+    /* If we reach here, we have passed all validation checks */
+    ret = CFE_SUCCESS;
+
+CF_ValidateConfigTable_Exit_Tag:
     return ret;
 }
 

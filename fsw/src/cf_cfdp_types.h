@@ -64,6 +64,11 @@
  */
 #define CF_NUM_CHUNKS_ALL_CHANNELS (CF_TOTAL_CHUNKS * CF_NUM_TRANSACTIONS_PER_CHANNEL)
 
+/** 
+ * \brief Length of the CF message buffer for sending and receiving 
+ */
+#define CF_MSG_BUF_LEN (sizeof(CFE_MSG_TelemetryHeader_t) + CF_MAX_PDU_SIZE + CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES)
+
 /**
  * @brief High-level state of a transaction
  */
@@ -380,6 +385,12 @@ typedef enum
     CF_TickType_NUM_TYPES
 } CF_TickType_t;
 
+typedef union CF_ChannelConnId
+{
+    CFE_SB_PipeId_t pipe;  /**< \brief Pipe ID for SB channels*/
+    osal_id_t sock_id;     /**< \brief Socket ID  for UDP channels*/
+} CF_ChannelConnId_t;
+
 /**
  * @brief Channel state object
  *
@@ -394,7 +405,7 @@ typedef struct CF_Channel
     CF_CListNode_t *qs[CF_QueueIdx_NUM];
     CF_CListNode_t *cs[CF_Direction_NUM];
 
-    CFE_SB_PipeId_t pipe;
+    CF_ChannelConnId_t conn_id;
 
     uint32 num_cmd_tx;
 
@@ -457,6 +468,9 @@ typedef struct CF_Engine
 
     CF_Output_t out;
     CF_Input_t  in;
+
+    /* buffer for UDP sends and receives */
+    uint8 msgBuffer[CF_MSG_BUF_LEN];
 
     /* NOTE: could have separate array of transactions as part of channel? */
     CF_Transaction_t transactions[CF_NUM_TRANSACTIONS];

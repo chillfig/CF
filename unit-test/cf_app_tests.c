@@ -257,6 +257,24 @@ void Test_CF_ValidateConfigTable_FailBecauseOutgoingFileChunkSmallerThanDataArra
     UtAssert_INT32_EQ(result, CFE_STATUS_VALIDATION_FAILURE);
 }
 
+void Test_CF_ValidateConfigTable_ConnectionTypeError(void)
+{
+    /* Arange */
+    CF_ConfigTable_t *arg_table = &table;
+    int32             result;
+
+    arg_table->ticks_per_second             = 1;
+    arg_table->rx_crc_calc_bytes_per_wakeup = 0x0400; /* 1024 aligned */
+    arg_table->outgoing_file_chunk_size     = sizeof(CF_CFDP_PduFileDataContent_t);
+    arg_table->chan[0].connection_type      = -1;
+
+    /* Act */
+    result = CF_ValidateConfigTable(arg_table);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CFE_STATUS_VALIDATION_FAILURE);
+}
+
 void Test_CF_ValidateConfigTable_Success(void)
 {
     /* Arange */
@@ -266,6 +284,8 @@ void Test_CF_ValidateConfigTable_Success(void)
     arg_table->ticks_per_second             = 1;
     arg_table->rx_crc_calc_bytes_per_wakeup = 0x0400; /* 1024 aligned */
     arg_table->outgoing_file_chunk_size     = sizeof(CF_CFDP_PduFileDataContent_t);
+    arg_table->chan[0].connection_type      = CF_SB_CHANNEL;
+    arg_table->chan[1].connection_type      = CF_UDP_CHANNEL;
 
     /* Act */
     result = CF_ValidateConfigTable(arg_table);
@@ -734,6 +754,8 @@ void add_CF_ValidateConfigTable_tests(void)
     UtTest_Add(Test_CF_ValidateConfigTable_FailBecauseOutgoingFileChunkSmallerThanDataArray,
                Setup_cf_config_table_tests, CF_App_Tests_Teardown,
                "Test_CF_ValidateConfigTable_FailBecauseOutgoingFileChunkSmallerThanDataArray");
+    UtTest_Add(Test_CF_ValidateConfigTable_ConnectionTypeError, Setup_cf_config_table_tests, 
+               CF_App_Tests_Teardown, "Test_CF_ValidateConfigTable_ConnectionTypeError");
     UtTest_Add(Test_CF_ValidateConfigTable_Success, Setup_cf_config_table_tests, CF_App_Tests_Teardown,
                "Test_CF_ValidateConfigTable_Success");
 }

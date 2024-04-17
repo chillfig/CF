@@ -68,7 +68,6 @@ typedef struct
 {
     CF_UDP_SocketAddress_t my_address;     /**< \brief The socket address for this SBNg instance */
     CF_UDP_SocketAddress_t the_other_addr;  /**< \brief The socket address for the other UDP endpoint */ 
-    osal_id_t sock_id;                     /**< \brief Socket ID */
 } CF_UDP_ConnectionData_t;
 
 /**

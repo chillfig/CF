@@ -7,7 +7,10 @@ set(APP_SRC_FILES
   fsw/src/cf_cfdp.c
   fsw/src/cf_cfdp_r.c
   fsw/src/cf_cfdp_s.c
+  fsw/src/cf_udp.c
   fsw/src/cf_cfdp_sbintf.c
+  fsw/src/cf_cfdp_udpintf.c
+  fsw/src/cf_cfdp_intf.c
   fsw/src/cf_cfdp_dispatch.c
   fsw/src/cf_chunk.c
   fsw/src/cf_clist.c

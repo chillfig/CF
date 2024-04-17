@@ -26,46 +26,44 @@
 #include "cf_cfdp_sbintf.h"
 #include "utgenstub.h"
 
-void UT_DefaultHandler_CF_CFDP_MsgOutGet(void *, UT_EntryKey_t, const UT_StubContext_t *);
-
 /*
  * ----------------------------------------------------
- * Generated stub function for CF_CFDP_MsgOutGet()
+ * Generated stub function for CF_CFDP_SB_MsgOutGet()
  * ----------------------------------------------------
  */
-CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *t, bool silent)
+CF_Logical_PduBuffer_t *CF_CFDP_SB_MsgOutGet(const CF_Transaction_t *t, bool silent)
 {
-    UT_GenStub_SetupReturnBuffer(CF_CFDP_MsgOutGet, CF_Logical_PduBuffer_t *);
+    UT_GenStub_SetupReturnBuffer(CF_CFDP_SB_MsgOutGet, CF_Logical_PduBuffer_t *);
 
-    UT_GenStub_AddParam(CF_CFDP_MsgOutGet, const CF_Transaction_t *, t);
-    UT_GenStub_AddParam(CF_CFDP_MsgOutGet, bool, silent);
+    UT_GenStub_AddParam(CF_CFDP_SB_MsgOutGet, const CF_Transaction_t *, t);
+    UT_GenStub_AddParam(CF_CFDP_SB_MsgOutGet, bool, silent);
 
-    UT_GenStub_Execute(CF_CFDP_MsgOutGet, Basic, UT_DefaultHandler_CF_CFDP_MsgOutGet);
+    UT_GenStub_Execute(CF_CFDP_SB_MsgOutGet, Basic, NULL);
 
-    return UT_GenStub_GetReturnValue(CF_CFDP_MsgOutGet, CF_Logical_PduBuffer_t *);
+    return UT_GenStub_GetReturnValue(CF_CFDP_SB_MsgOutGet, CF_Logical_PduBuffer_t *);
 }
 
 /*
  * ----------------------------------------------------
- * Generated stub function for CF_CFDP_ReceiveMessage()
+ * Generated stub function for CF_CFDP_SB_ReceiveMessage()
  * ----------------------------------------------------
  */
-void CF_CFDP_ReceiveMessage(CF_Channel_t *c)
+void CF_CFDP_SB_ReceiveMessage(CF_Channel_t *c)
 {
-    UT_GenStub_AddParam(CF_CFDP_ReceiveMessage, CF_Channel_t *, c);
+    UT_GenStub_AddParam(CF_CFDP_SB_ReceiveMessage, CF_Channel_t *, c);
 
-    UT_GenStub_Execute(CF_CFDP_ReceiveMessage, Basic, NULL);
+    UT_GenStub_Execute(CF_CFDP_SB_ReceiveMessage, Basic, NULL);
 }
 
 /*
  * ----------------------------------------------------
- * Generated stub function for CF_CFDP_Send()
+ * Generated stub function for CF_CFDP_SB_Send()
  * ----------------------------------------------------
  */
-void CF_CFDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
+void CF_CFDP_SB_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
 {
-    UT_GenStub_AddParam(CF_CFDP_Send, uint8, chan_num);
-    UT_GenStub_AddParam(CF_CFDP_Send, const CF_Logical_PduBuffer_t *, ph);
+    UT_GenStub_AddParam(CF_CFDP_SB_Send, uint8, chan_num);
+    UT_GenStub_AddParam(CF_CFDP_SB_Send, const CF_Logical_PduBuffer_t *, ph);
 
-    UT_GenStub_Execute(CF_CFDP_Send, Basic, NULL);
+    UT_GenStub_Execute(CF_CFDP_SB_Send, Basic, NULL);
 }

@@ -47,6 +47,7 @@
 
 #include "cf_cfdp_r.h"
 #include "cf_cfdp_s.h"
+#include "cf_cfdp_intf.h"
 #include "cf_cfdp_sbintf.h"
 
 #include <string.h>
@@ -58,10 +59,10 @@
  * See description in cf_cfdp_sbintf.h for argument/return detail
  *
  *-----------------------------------------------------------------*/
-CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *t, bool silent)
+CF_Logical_PduBuffer_t *CF_CFDP_SB_MsgOutGet(const CF_Transaction_t *t, bool silent)
 {
     /* if channel is frozen, do not take message */
-    CF_Channel_t *          c       = CF_AppData.engine.channels + t->chan_num;
+    CF_Channel_t           *c = (CF_AppData.engine.channels + t->chan_num);
     bool                    success = true;
     CF_Logical_PduBuffer_t *ret;
     int32                   os_status;
@@ -100,7 +101,7 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *t, bool silent
         /* Allocate message buffer on success */
         if (os_status == OS_SUCCESS)
         {
-            CF_AppData.engine.out.msg = CFE_SB_AllocateMessageBuffer(offsetof(CF_PduTlmMsg_t, ph) + CF_MAX_PDU_SIZE +
+            CF_AppData.engine.out.msg = CFE_SB_AllocateMessageBuffer(offsetof(CF_PduTlmMsg_t, pdu_hdr) + CF_MAX_PDU_SIZE +
                                                                      CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES);
         }
 
@@ -118,7 +119,7 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *t, bool silent
         if (success)
         {
             CFE_MSG_Init(&CF_AppData.engine.out.msg->Msg,
-                         CFE_SB_ValueToMsgId(CF_AppData.config_table->chan[t->chan_num].mid_output), offsetof(CF_PduTlmMsg_t, ph));
+                         CFE_SB_ValueToMsgId(CF_AppData.config_table->chan[t->chan_num].mid_output), offsetof(CF_PduTlmMsg_t, pdu_hdr));
             ++CF_AppData.engine.outgoing_counter; /* even if max_outgoing_messages_per_wakeup is 0 (unlimited), it's ok
                                                     to inc this */
 
@@ -130,8 +131,8 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *t, bool silent
     /* if returning a buffer, then reset the encoder state to point to the beginning of the encapsulation msg */
     if (success && ret != NULL)
     {
-        CF_CFDP_EncodeStart(&CF_AppData.engine.out.encode, CF_AppData.engine.out.msg, ret, offsetof(CF_PduTlmMsg_t, ph),
-                            offsetof(CF_PduTlmMsg_t, ph) + CF_MAX_PDU_SIZE);
+        CF_CFDP_EncodeStart(&CF_AppData.engine.out.encode, CF_AppData.engine.out.msg, ret, offsetof(CF_PduTlmMsg_t, pdu_hdr),
+                            offsetof(CF_PduTlmMsg_t, pdu_hdr) + CF_MAX_PDU_SIZE);
     }
 
     return ret;
@@ -143,22 +144,30 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *t, bool silent
  * See description in cf_cfdp_sbintf.h for argument/return detail
  *
  *-----------------------------------------------------------------*/
-void CF_CFDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
+void CF_CFDP_SB_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
 {
     CFE_MSG_Size_t sb_msgsize;
+    CFE_Status_t status;
 
     CF_Assert(chan_num < CF_NUM_CHANNELS);
 
     /* now handle the SB encapsulation - this should reflect the
      * length of the entire message, including encapsulation */
-    sb_msgsize = offsetof(CF_PduTlmMsg_t, ph);
+    sb_msgsize = offsetof(CF_PduTlmMsg_t, pdu_hdr);
     sb_msgsize += ph->pdu_header.header_encoded_length;
     sb_msgsize += ph->pdu_header.data_encoded_length;
     sb_msgsize += CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES;
 
     CFE_MSG_SetSize(&CF_AppData.engine.out.msg->Msg, sb_msgsize);
     CFE_MSG_SetMsgTime(&CF_AppData.engine.out.msg->Msg, CFE_TIME_GetTime());
-    CFE_SB_TransmitBuffer(CF_AppData.engine.out.msg, true);
+    status = CFE_SB_TransmitBuffer(CF_AppData.engine.out.msg, true);
+
+    if (status != CFE_SUCCESS)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_CFDP_SEND, CFE_EVS_EventType_ERROR,
+                          "CF_CFDP_UDP_Send(chan_num=%d): CFE_SB_TransmitBuffer() failed (0x%08X)",
+                          chan_num, status);
+    }
 
     ++CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu;
 
@@ -171,13 +180,13 @@ void CF_CFDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
  * See description in cf_cfdp_sbintf.h for argument/return detail
  *
  *-----------------------------------------------------------------*/
-void CF_CFDP_ReceiveMessage(CF_Channel_t *c)
+void CF_CFDP_SB_ReceiveMessage(CF_Channel_t *c)
 {
     CF_Transaction_t *t; /* initialized below */
     uint32            count = 0;
     int32             status;
     const int         chan_num = (c - CF_AppData.engine.channels);
-    CFE_SB_Buffer_t * bufptr;
+    CFE_SB_Buffer_t  *bufptr;
     CFE_MSG_Size_t    msg_size;
     CFE_MSG_Type_t    msg_type = CFE_MSG_Type_Invalid;
 
@@ -186,7 +195,7 @@ void CF_CFDP_ReceiveMessage(CF_Channel_t *c)
 
     for (; count < CF_AppData.config_table->chan[chan_num].rx_max_messages_per_wakeup; ++count)
     {
-        status = CFE_SB_ReceiveBuffer(&bufptr, c->pipe, CFE_SB_POLL);
+        status = CFE_SB_ReceiveBuffer(&bufptr, c->conn_id.pipe, CFE_SB_POLL);
         if (status != CFE_SUCCESS)
         {
             break; /* no more messages */
@@ -208,11 +217,11 @@ void CF_CFDP_ReceiveMessage(CF_Channel_t *c)
         }
         if (msg_type == CFE_MSG_Type_Tlm)
         {
-            CF_CFDP_DecodeStart(&CF_AppData.engine.in.decode, bufptr, ph, offsetof(CF_PduTlmMsg_t, ph), msg_size);
+            CF_CFDP_DecodeStart(&CF_AppData.engine.in.decode, bufptr, ph, offsetof(CF_PduTlmMsg_t, pdu_hdr), msg_size);
         }
         else
         {
-            CF_CFDP_DecodeStart(&CF_AppData.engine.in.decode, bufptr, ph, offsetof(CF_PduCmdMsg_t, ph), msg_size);
+            CF_CFDP_DecodeStart(&CF_AppData.engine.in.decode, bufptr, ph, offsetof(CF_PduCmdMsg_t, pdu_hdr), msg_size);
         }
         if (!CF_CFDP_RecvPh(chan_num, ph))
         {

@@ -47,12 +47,31 @@
 
 #define UT_CFDP_CHANNEL 0
 
+#define MAX_SND_MSG_COUNT (256)
+
+#define UtAssert_EventSent(EventID, EventType, EventText, ...) \
+            UtAssertEx((UT_EventIsInHistoryWithText(EventID, EventType, EventText)), \
+                        UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+
+#define UtAssert_EventNotSent(EventID, EventType, EventText, ...) \
+            UtAssertEx((UT_EventIsInHistoryWithText(EventID, EventType, EventText) == false), \
+                        UtAssert_GetContext(), __FILE__, __LINE__, __VA_ARGS__)
+
 typedef enum
 {
     UT_CF_Setup_NONE,
     UT_CF_Setup_TX,
     UT_CF_Setup_RX
 } UT_CF_Setup_t;
+
+/* Struct for event msg tracking */
+typedef struct
+{
+    uint16 EventId;
+    uint16 EventType;
+    uint32 EventCount;
+    char EventText[CFE_MISSION_SB_MAX_SB_MSG_SIZE];
+} SendEventData_t;
 
 /*******************************************************************************
 **
@@ -211,12 +230,22 @@ void *UT_CF_GetContextBufferImpl(UT_EntryKey_t FuncKey, size_t ReqSize);
 extern uint16 UT_CF_CapturedEventIDs[];
 void          UT_CF_ResetEventCapture(void);
 void          UT_CF_CheckEventID_Impl(uint16 ExpectedID, const char *EventIDStr);
+void          UT_CF_CheckNotEventID_Impl(uint16 ExpectedID, const char *EventIDStr);
 #define UT_CF_AssertEventID(eid) UT_CF_CheckEventID_Impl(eid, #eid)
+#define UT_CF_AssertNotEventID(eid) UT_CF_CheckNotEventID_Impl(eid, #eid)
 
 /* bottom */
 
 void cf_tests_Setup(void);
 void cf_tests_Teardown(void);
+
+/* Function Declarations */
+void UT_CF_ClearAll(void);
+void Ut_CheckEvent_Setup(void);
+bool UT_EventIsInHistoryWithText(uint16 EventIDToSearchFor, uint16 EventTypeToSearchFor, const char *eventText);
+bool UT_AnyEventSent(void);
+int32 Ut_CFE_EVS_SendEvent_hook(void *UserObj, int32 StubRetcode, uint32 CallCount, 
+                                const UT_StubContext_t *Context, va_list va);
 
 /* Helper macro to avoid coping test name */
 #define TEST_CF_ADD(test) UtTest_Add(test, cf_tests_Setup, cf_tests_Teardown, #test);
