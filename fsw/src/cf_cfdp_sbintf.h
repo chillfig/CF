@@ -31,38 +31,6 @@
 
 #include "cf_cfdp_types.h"
 
-/**
- * @brief PDU command encapsulation structure
- *
- * This encapsulates a CFDP PDU into a format that is sent or received over the
- * software bus, adding "command" encapsulation (even though these are not really
- * commands).
- *
- * @note this is only the definition of the header.  In reality all messages are
- * larger than this, up to CF_MAX_PDU_SIZE.
- */
-typedef struct CF_PduCmdMsg
-{
-    CFE_MSG_CommandHeader_t hdr; /**< \brief software bus headers, not really used by CF */
-    CF_CFDP_PduHeader_t     ph;  /**< \brief Beginning of CFDP headers */
-} CF_PduCmdMsg_t;
-
-/**
- * @brief PDU send encapsulation structure
- *
- * This encapsulates a CFDP PDU into a format that is sent or received over the
- * software bus, adding "telemetry" encapsulation (even though these are not really
- * telemetry items).
- *
- * @note this is only the definition of the header.  In reality all messages are
- * larger than this, up to CF_MAX_PDU_SIZE.
- */
-typedef struct CF_PduTlmMsg
-{
-    CFE_MSG_TelemetryHeader_t hdr; /**< \brief software bus headers, not really used by CF */
-    CF_CFDP_PduHeader_t       ph;  /**< \brief Beginning of CFDP headers */
-} CF_PduTlmMsg_t;
-
 /************************************************************************/
 /** @brief Obtain a message buffer to construct a PDU inside.
  *
@@ -83,7 +51,7 @@ typedef struct CF_PduTlmMsg
  * @returns Pointer to a CF_Logical_PduBuffer_t on success.
  * @retval  NULL on error
  */
-CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *t, bool silent);
+CF_Logical_PduBuffer_t *CF_CFDP_SB_MsgOutGet(const CF_Transaction_t *t, bool silent);
 
 /************************************************************************/
 /** @brief Sends the current output buffer via the software bus.
@@ -95,7 +63,7 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *t, bool silent
  * @param ph       Pointer to PDU buffer to send
  *
  */
-void CF_CFDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph);
+void CF_CFDP_SB_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph);
 
 /************************************************************************/
 /** @brief Process received message on channel PDU input pipe.
@@ -106,6 +74,6 @@ void CF_CFDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph);
  * @param c       Channel to receive message on
  *
  */
-void CF_CFDP_ReceiveMessage(CF_Channel_t *c);
+void CF_CFDP_SB_ReceiveMessage(CF_Channel_t *c);
 
 #endif /* !CF_CFDP_SBINTF_H */

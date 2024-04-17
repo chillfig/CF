@@ -52,6 +52,15 @@
 #define CF_REC_PDU_BAD_EOF_ERROR        -5 /**< \brief Receive PDU: Invalid EOF packet */
 #define CF_SEND_PDU_NO_BUF_AVAIL_ERROR  -6 /**< \brief Send PDU: No send buffer available, throttling limit reached */
 #define CF_SEND_PDU_ERROR               -7 /**< \brief Send PDU: Send failed */
+
+#define CF_NULL_POINTER_ERR             -8 /**< \brief Null pointer error */
+#define CF_INVALID_MSG_LEN_ERR          -9 /**< \brief Invalid message length */
+#define CF_SOCKET_OPEN_ERR             -10 /**< \brief Socket open error */
+#define CF_SOCKET_BIND_ERR             -11 /**< \brief Socket bind error */
+#define CF_SOCKET_INVALID_ERR          -12 /**< \brief Socket is not defined */
+#define CF_SOCKET_SEND_ERR             -13 /**< \brief Socket send failure */
+#define CF_SOCKET_RECV_ERR             -14 /**< \brief Socket receive failure */
+#define CF_INVALID_SRC_ERR             -15 /**< \brief Message received from unexpected source */
 /**\}*/
 
 /**

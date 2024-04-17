@@ -34,6 +34,9 @@
 
 uint16 UT_CF_CapturedEventIDs[4];
 
+SendEventData_t SendMsgDataList[MAX_SND_MSG_COUNT];
+uint16 SendMsgDataCount;
+
 void *UT_CF_GetContextBufferImpl(UT_EntryKey_t FuncKey, size_t ReqSize)
 {
     void * TempPtr;
@@ -94,6 +97,21 @@ void UT_CF_CheckEventID_Impl(uint16 ExpectedID, const char *EventIDStr)
     UtAssert_True(found, "Generated event: %s (%u)", EventIDStr, (unsigned int)ExpectedID);
 }
 
+void UT_CF_CheckNotEventID_Impl(uint16 ExpectedID, const char *EventIDStr)
+{
+    /* check if the event exists anywhere in the buffer */
+    bool   found;
+    uint16 i;
+
+    found = false;
+    for (i = 0; !found && i < (sizeof(UT_CF_CapturedEventIDs) / sizeof(UT_CF_CapturedEventIDs[0])); ++i)
+    {
+        found = (UT_CF_CapturedEventIDs[i] == ExpectedID);
+    }
+
+    UtAssert_True((!found), "Did not generate event: %s (%u)", EventIDStr, (unsigned int)ExpectedID);
+}
+
 /******************************************************************************
  * The Setup and Teardown
  ******************************************************************************/
@@ -111,6 +129,106 @@ void cf_tests_Setup(void)
 void cf_tests_Teardown(void)
 {
     /* do nothing by design */
+}
+
+/* ---------------------  Helpers -------------------------------- */
+void UT_CF_ClearAll()
+{
+    UT_ResetState(0);
+
+    Ut_CheckEvent_Setup();
+}
+/*
+ * Helper function to set up for event checking
+ * This attaches the hook function to CFE_EVS_SendEvent
+ */
+void Ut_CheckEvent_Setup(void)
+{
+    /* Set function hook, reset internal storage */
+    UT_SetVaHookFunction(UT_KEY(CFE_EVS_SendEvent), Ut_CFE_EVS_SendEvent_hook, NULL);
+    memset(&SendMsgDataList, 0, sizeof(SendMsgDataList));
+    SendMsgDataCount = 0;
+}
+
+
+bool UT_EventIsInHistoryWithText(uint16 EventIDToSearchFor, uint16 EventTypeToSearchFor, const char *eventText)
+{
+    bool result = false;
+    uint16 idx;
+
+    for (idx = 0; idx < SendMsgDataCount; ++ idx)
+    {
+        if ((SendMsgDataList[idx].EventId == EventIDToSearchFor) && 
+            (eventText == NULL || (strcmp(SendMsgDataList[idx].EventText, eventText) == 0)) && 
+            (SendMsgDataList[idx].EventType == EventTypeToSearchFor))
+        {
+            result = true;
+            break;
+        }
+    }
+
+    return result;
+}
+
+bool UT_AnyEventSent(void)
+{
+    bool bRetCode = false;
+
+    if (SendMsgDataCount > 0)
+    {
+        bRetCode = true;
+    }
+    return bRetCode;
+}
+
+int32 Ut_CFE_EVS_SendEvent_hook(void *UserObj, int32 StubRetcode,
+        uint32 CallCount, const UT_StubContext_t *Context, va_list va)
+{
+    char TestText[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    uint16 EventId;
+    uint16 EventType;
+    const char *Spec;
+    TestText[0] = 0;
+    uint16 idx;
+
+    /*
+     * The CFE_EVS_SendEvent stub passes the EventID as the
+     * first context argument.
+     */
+    if (Context->ArgCount > 0)
+    {
+        Spec = UT_Hook_GetArgValueByName(Context, "Spec", const char *);
+        if (Spec != NULL)
+        {
+            vsnprintf(TestText, sizeof(TestText), Spec, va);
+        }
+
+        EventId   = UT_Hook_GetArgValueByName(Context, "EventID", uint16);
+        EventType = UT_Hook_GetArgValueByName(Context, "EventType", uint16);
+
+        for (idx = 0; idx < SendMsgDataCount; ++idx)
+        {
+            if ((SendMsgDataList[idx].EventId == EventId) && (strcmp(SendMsgDataList[idx].EventText, TestText) == 0))
+            {
+                break;
+            }
+        }
+
+        if (idx < SendMsgDataCount)
+        {
+            SendMsgDataList[idx].EventCount++;
+        }
+        else if ((idx == SendMsgDataCount) && (idx < MAX_SND_MSG_COUNT))
+        {
+            SendMsgDataList[idx].EventId   = EventId;
+            SendMsgDataList[idx].EventType = EventType;
+            strcpy(SendMsgDataList[idx].EventText, TestText);
+            SendMsgDataList[idx].EventCount = 1;
+            SendMsgDataCount++;
+        }
+    }
+
+    return StubRetcode;
 }
 
 /******************************************************************************

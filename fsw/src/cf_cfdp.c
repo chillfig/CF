@@ -37,11 +37,12 @@
 #include "cf_perfids.h"
 #include "cf_cfdp.h"
 #include "cf_utils.h"
+#include "cf_udp.h"
 
 #include "cf_cfdp_r.h"
 #include "cf_cfdp_s.h"
 #include "cf_cfdp_dispatch.h"
-#include "cf_cfdp_sbintf.h"
+#include "cf_cfdp_intf.h"
 
 #include <string.h>
 #include "cf_assert.h"
@@ -946,15 +947,15 @@ void CF_CFDP_RecvIdle(CF_Transaction_t *t, CF_Logical_PduBuffer_t *ph)
 CFE_Status_t CF_CFDP_InitEngine(void)
 {
     /* initialize all transaction nodes */
-    CF_History_t *     h;
-    CF_Transaction_t * t                = CF_AppData.engine.transactions;
+    CF_History_t      *h                = NULL;
+    CF_Transaction_t  *t                = CF_AppData.engine.transactions;
     CF_ChunkWrapper_t *c                = CF_AppData.engine.chunks;
     CFE_Status_t       ret              = CFE_SUCCESS;
     int                chunk_mem_offset = 0;
-    int                i;
-    int                j;
-    int                k;
-    char               nbuf[64];
+    int                i                = 0;
+    int                j                = 0;
+    int                k                = 0;
+    char               nbuf[64]         = "";
 
     static const int CF_DIR_MAX_CHUNKS[CF_Direction_NUM][CF_NUM_CHANNELS] = {CF_CHANNEL_NUM_RX_CHUNKS_PER_TRANSACTION,
                                                                              CF_CHANNEL_NUM_TX_CHUNKS_PER_TRANSACTION};
@@ -963,28 +964,46 @@ CFE_Status_t CF_CFDP_InitEngine(void)
 
     for (i = 0; i < CF_NUM_CHANNELS; ++i)
     {
-        snprintf(nbuf, sizeof(nbuf) - 1, "%s%d", CF_CHANNEL_PIPE_PREFIX, i);
-        ret = CFE_SB_CreatePipe(&CF_AppData.engine.channels[i].pipe, CF_AppData.config_table->chan[i].pipe_depth_input,
-                                nbuf);
-        if (ret != CFE_SUCCESS)
+        if (CF_AppData.config_table->chan[i].connection_type == CF_SB_CHANNEL)
         {
-            CFE_EVS_SendEvent(CF_EID_ERR_INIT_PIPE, CFE_EVS_EventType_ERROR,
-                              "CF: failed to create pipe %s, returned 0x%08lx", nbuf, (unsigned long)ret);
-            break;
+            snprintf(nbuf, sizeof(nbuf) - 1, "%s%d", CF_CHANNEL_PIPE_PREFIX, i);
+            ret = CFE_SB_CreatePipe(&CF_AppData.engine.channels[i].conn_id.pipe, 
+                                    CF_AppData.config_table->chan[i].pipe_depth_input, nbuf);
+            if (ret != CFE_SUCCESS)
+            {
+                CFE_EVS_SendEvent(CF_EID_ERR_INIT_PIPE, CFE_EVS_EventType_ERROR,
+                                  "CF: failed to create pipe %s, returned 0x%08lx", nbuf, (unsigned long)ret);
+                break;
+            }
+
+            ret = CFE_SB_SubscribeLocal(CFE_SB_ValueToMsgId(CF_AppData.config_table->chan[i].mid_input),
+                                        CF_AppData.engine.channels[i].conn_id.pipe,
+                                        CF_AppData.config_table->chan[i].pipe_depth_input);
+            if (ret != CFE_SUCCESS)
+            {
+                CFE_EVS_SendEvent(CF_EID_ERR_INIT_SUB, CFE_EVS_EventType_ERROR,
+                                  "CF: failed to subscribe to MID 0x%lx, returned 0x%08lx",
+                                  (unsigned long)CF_AppData.config_table->chan[i].mid_input, (unsigned long)ret);
+                break;
+            }
+        }
+        else if (CF_AppData.config_table->chan[i].connection_type == CF_UDP_CHANNEL)
+        {
+            ret = CF_UDP_InitConnection(&CF_AppData.config_table->chan[i].udp_config, &CF_AppData.engine.channels[i]);
+            if (ret != CFE_SUCCESS)
+            {
+                CFE_EVS_SendEvent(CF_EID_ERR_INIT_UDP, CFE_EVS_EventType_ERROR,
+                                  "CF: failed to initialize UDP connection for channel %d, returned 0x%08lx", i,
+                                  (unsigned long)ret);
+                break;
+            }
+        }
+        else
+        {
+            /* Do nothing. This is to conform to the SSET coding standard. */
         }
 
-        ret = CFE_SB_SubscribeLocal(CFE_SB_ValueToMsgId(CF_AppData.config_table->chan[i].mid_input),
-                                    CF_AppData.engine.channels[i].pipe,
-                                    CF_AppData.config_table->chan[i].pipe_depth_input);
-        if (ret != CFE_SUCCESS)
-        {
-            CFE_EVS_SendEvent(CF_EID_ERR_INIT_SUB, CFE_EVS_EventType_ERROR,
-                              "CF: failed to subscribe to MID 0x%lx, returned 0x%08lx",
-                              (unsigned long)CF_AppData.config_table->chan[i].mid_input, (unsigned long)ret);
-            break;
-        }
-
-        if (CF_AppData.config_table->chan[i].sem_name[0])
+        if (CF_AppData.config_table->chan[i].sem_name[0] != '\0')
         {
             /*
              * There is a start up race condition because CFE starts all apps at the same time,
@@ -1838,6 +1857,17 @@ void CF_CFDP_DisableEngine(void)
         /* finally all queue counters must be reset */
         memset(&CF_AppData.hk.channel_hk[i].q_size, 0, sizeof(CF_AppData.hk.channel_hk[i].q_size));
 
-        CFE_SB_DeletePipe(c->pipe);
+        if (CF_AppData.config_table->chan[i].connection_type == CF_SB_CHANNEL)
+        {
+            CFE_SB_DeletePipe(c->conn_id.pipe);
+        }
+        else if (CF_AppData.config_table->chan[i].connection_type == CF_UDP_CHANNEL)
+        {
+            CF_UDP_CleanupConnection(c);
+        }
+        else
+        {
+            /* Do nothing. This is to conform to the SSET coding standard. */
+        }
     }
 }

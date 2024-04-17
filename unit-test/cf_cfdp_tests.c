@@ -24,8 +24,9 @@
 #include "cf_cfdp.h"
 #include "cf_cfdp_s.h"
 #include "cf_cfdp_pdu.h"
-#include "cf_cfdp_sbintf.h"
+#include "cf_cfdp_intf.h"
 #include "cf_cfdp_dispatch.h"
+#include "cf_udp.h"
 
 /*******************************************************************************
 **
@@ -899,6 +900,26 @@ void Test_CF_CFDP_InitEngine(void)
     UT_SetDeferredRetcode(UT_KEY(CFE_SB_SubscribeLocal), 1, CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
     UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
     UtAssert_BOOL_FALSE(CF_AppData.engine.enabled);
+
+    /* success of CF_UDP_InitConnection */
+    UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, NULL, &config);
+    config->chan[0].connection_type = CF_UDP_CHANNEL;
+    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CFE_SUCCESS);
+    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CFE_SUCCESS);
+    UtAssert_BOOL_TRUE(CF_AppData.engine.enabled);
+
+    /* failure of CF_UDP_InitConnection */
+    UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, NULL, &config);
+    config->chan[0].connection_type = CF_UDP_CHANNEL;
+    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CF_NULL_POINTER_ERR);
+    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CF_NULL_POINTER_ERR);
+    UtAssert_BOOL_FALSE(CF_AppData.engine.enabled);
+
+    /* bad connection_type */
+    UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, NULL, &config);
+    config->chan[0].connection_type = -1;
+    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CFE_SUCCESS);
+    UtAssert_BOOL_TRUE(CF_AppData.engine.enabled);
 }
 
 void Test_CF_CFDP_TxFile(void)
@@ -1508,11 +1529,32 @@ void Test_CF_CFDP_DisableEngine(void)
     /* Test case for:
      * void CF_CFDP_DisableEngine(void)
      */
+    CF_ConfigTable_t cf_cfg_tbl;
+    
+    /* Initial config table setup */
+    memset(&cf_cfg_tbl, 0, sizeof(cf_cfg_tbl));
+    for (int channelIdx = 0; channelIdx < CF_NUM_CHANNELS; ++channelIdx)
+    {
+        if (channelIdx == CF_NUM_CHANNELS - 1)
+        {
+            cf_cfg_tbl.chan[channelIdx].connection_type = -1;
+        }
+        else if (channelIdx < (int)(CF_NUM_CHANNELS / 2))
+        {
+            cf_cfg_tbl.chan[channelIdx].connection_type = CF_SB_CHANNEL;
+        }
+        else
+        {
+            cf_cfg_tbl.chan[channelIdx].connection_type = CF_UDP_CHANNEL;
+        }
+    }
+    CF_AppData.config_table = &cf_cfg_tbl;
 
     /* nominal call */
     CF_AppData.engine.enabled = 1;
     UtAssert_VOIDCALL(CF_CFDP_DisableEngine());
-    UtAssert_STUB_COUNT(CFE_SB_DeletePipe, CF_NUM_CHANNELS);
+    UtAssert_STUB_COUNT(CFE_SB_DeletePipe, (int)(CF_NUM_CHANNELS / 2));
+    UtAssert_STUB_COUNT(CF_UDP_CleanupConnection, CF_NUM_CHANNELS - (int)(CF_NUM_CHANNELS / 2) - 1);
     UtAssert_BOOL_FALSE(CF_AppData.engine.enabled);
 
     /* nominal call with playbacks and polls active */

@@ -45,8 +45,10 @@ add_cfe_coverage_stubs(cf_internal
   stubs/cf_cfdp_r_stubs.c
   stubs/cf_cfdp_s_stubs.c
   stubs/cf_cfdp_stubs.c
+  stubs/cf_cfdp_intf_stubs.c
   stubs/cf_cfdp_sbintf_handlers.c
   stubs/cf_cfdp_sbintf_stubs.c
+  stubs/cf_cfdp_udpintf_stubs.c
   stubs/cf_chunk_handlers.c
   stubs/cf_chunk_stubs.c
   stubs/cf_clist_handlers.c
@@ -57,6 +59,7 @@ add_cfe_coverage_stubs(cf_internal
   stubs/cf_codec_stubs.c
   stubs/cf_crc_stubs.c
   stubs/cf_timer_stubs.c
+  stubs/cf_udp_stubs.c
   stubs/cf_utils_handlers.c
   stubs/cf_utils_stubs.c
 )

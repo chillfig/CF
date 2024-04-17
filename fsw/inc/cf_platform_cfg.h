@@ -322,7 +322,8 @@ typedef uint32 CF_TransactionSeq_t;
  *      16 <= value
  * 
  * \note
- *      This value should be a multiple of 4 for data alignment.
+ *      This value should be a multiple of 4 for data alignment. Increasing this value increases a buffer declared
+ *      don the stack, so a corresponding increase in the stack allocation for this app should be required.
  */
 #define CF_MAX_HOSTNAME_LENGTH  (64)
 
