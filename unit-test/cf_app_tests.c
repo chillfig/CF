@@ -161,6 +161,54 @@ void Test_CF_CheckTables_CallTo_CFE_TBL_GetAddress_Returns_CFE_TBL_INFO_UPDATED(
 
 /*******************************************************************************
 **
+**  CF_ValidateIPTable tests - full coverage
+**
+*******************************************************************************/
+
+void Test_CF_ValidateIPTable_NULL(void)
+{
+    /* Arrange */
+    int32             result;
+
+    /* Act */
+    result = CF_ValidateIPTable(NULL);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CF_NULL_POINTER_ERR);
+    UT_CF_AssertEventID(CF_EID_ERR_INIT_NULL_TBL);
+}
+
+void Test_CF_ValidateIPTable_FailChanHasTooManyValidIPs(void)
+{
+    /* Arrange */
+    CF_ValidIPTable_t ip_table = {0};
+    int32             result;
+
+    ip_table.chan[3].valid_ip_count = CF_MAX_VALID_IPS_PER_CHAN + 1;
+
+    /* Act */
+    result = CF_ValidateIPTable(&ip_table);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CFE_STATUS_VALIDATION_FAILURE);
+    UT_CF_AssertEventID(CF_EID_ERR_INIT_VALID_IPS);
+}
+
+void Test_CF_ValidateIPTable_Success(void)
+{
+    /* Arrange */
+    CF_ValidIPTable_t ip_table = {0};
+    int32             result;
+
+    /* Act */
+    result = CF_ValidateIPTable(&ip_table);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CFE_SUCCESS);
+}
+
+/*******************************************************************************
+**
 **  CF_ValidateConfigTable tests - full coverage
 **
 *******************************************************************************/
@@ -179,6 +227,11 @@ void cf_config_table_tests_set_table_to_nominal(void)
     table.rx_crc_calc_bytes_per_wakeup = Any_uint32_Except(0) << 10;
     /* all values less than sizeof(CF_CFDP_PduFileDataContent_t) are nominal */
     table.outgoing_file_chunk_size = Any_uint16_LessThan(sizeof(CF_CFDP_PduFileDataContent_t));
+    /* reset all channels to be SB connections */
+    for (int idx = 0; idx < CF_NUM_CHANNELS; ++idx)
+    {
+        table.chan[idx].connection_type = CF_SB_CHANNEL;
+    }
 }
 
 void Setup_cf_config_table_tests(void)
@@ -257,6 +310,27 @@ void Test_CF_ValidateConfigTable_FailBecauseOutgoingFileChunkSmallerThanDataArra
     UtAssert_INT32_EQ(result, CFE_STATUS_VALIDATION_FAILURE);
 }
 
+void Test_CF_ValidateConfigTable_InvalidUDPAddress(void)
+{
+    /* Arange */
+    CF_ConfigTable_t *arg_table = &table;
+    int32             result;
+
+    arg_table->ticks_per_second             = 1;
+    arg_table->rx_crc_calc_bytes_per_wakeup = 0x0400; /* 1024 aligned */
+    arg_table->outgoing_file_chunk_size     = sizeof(CF_CFDP_PduFileDataContent_t);
+    arg_table->chan[2].connection_type      = CF_UDP_CHANNEL;
+    
+    UT_SetDeferredRetcode(UT_KEY(CF_ValidateUDPAddress), 1, CF_NO_IP_TBL_ERR);
+
+    /* Act */
+    result = CF_ValidateConfigTable(arg_table);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CF_NO_IP_TBL_ERR);
+    UT_CF_AssertEventID(CF_EID_ERR_INIT_UDP_ADDR);
+}
+
 void Test_CF_ValidateConfigTable_ConnectionTypeError(void)
 {
     /* Arange */
@@ -275,6 +349,19 @@ void Test_CF_ValidateConfigTable_ConnectionTypeError(void)
     UtAssert_INT32_EQ(result, CFE_STATUS_VALIDATION_FAILURE);
 }
 
+void Test_CF_ValidateConfigTable_NULL(void)
+{
+    /* Arrange */
+    int32             result;
+
+    /* Act */
+    result = CF_ValidateConfigTable(NULL);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CF_NULL_POINTER_ERR);
+    UT_CF_AssertEventID(CF_EID_ERR_INIT_NULL_TBL);
+}
+
 void Test_CF_ValidateConfigTable_Success(void)
 {
     /* Arange */
@@ -286,6 +373,8 @@ void Test_CF_ValidateConfigTable_Success(void)
     arg_table->outgoing_file_chunk_size     = sizeof(CF_CFDP_PduFileDataContent_t);
     arg_table->chan[0].connection_type      = CF_SB_CHANNEL;
     arg_table->chan[1].connection_type      = CF_UDP_CHANNEL;
+    
+    UT_SetDeferredRetcode(UT_KEY(CF_ValidateUDPAddress), 1, CFE_SUCCESS);
 
     /* Act */
     result = CF_ValidateConfigTable(arg_table);
@@ -355,6 +444,72 @@ void Test_CF_TableInit_FailBecause_CFE_TBL_GetAddress_DidNotReturnSuccess(void)
 
     /* Assert */
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UT_CF_AssertEventID(CF_EID_ERR_INIT_TBL_GETADDR);
+}
+
+void Test_CF_TableInit_FailBecause2nd_CFE_TBL_Register_DidNotReturnSuccess(void)
+{
+    int32 result = -1;
+
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Register), 1, CFE_SUCCESS);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Register), 1, result);
+
+    /* Act */
+    UtAssert_INT32_EQ(CF_TableInit(), result);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_STUB_COUNT(CFE_TBL_Register, 2);
+    UT_CF_AssertEventID(CF_EID_ERR_INIT_TBL_REG);
+}
+
+void Test_CF_TableInit_FailBecause2nd_CFE_TBL_Load_DidNotReturnSuccess(void)
+{
+    int32 result = -1;
+
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, CFE_SUCCESS);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, result);
+
+    /* Act */
+    UtAssert_INT32_EQ(CF_TableInit(), result);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_STUB_COUNT(CFE_TBL_Load, 2);
+    UT_CF_AssertEventID(CF_EID_ERR_INIT_TBL_LOAD);
+}
+
+void Test_CF_TableInit_FailBecause2nd_CFE_TBL_Manage_DidNotReturnSuccess(void)
+{
+    int32 result = -1;
+
+    /* Arrange */
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Manage), 1, CFE_SUCCESS);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Manage), 1, result);
+
+    /* Act */
+    UtAssert_INT32_EQ(CF_TableInit(), result);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_STUB_COUNT(CFE_TBL_Manage, 2);
+    UT_CF_AssertEventID(CF_EID_ERR_INIT_TBL_MANAGE);
+}
+
+void Test_CF_TableInit_FailBecause2nd_CFE_TBL_GetAddress_DidNotReturnSuccess(void)
+{
+    int32 result = -1;
+
+    /* Arrange */
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 1, CFE_SUCCESS);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 1, result);
+
+    /* Act */
+    UtAssert_INT32_EQ(CF_TableInit(), result);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_STUB_COUNT(CFE_TBL_GetAddress, 2);
     UT_CF_AssertEventID(CF_EID_ERR_INIT_TBL_GETADDR);
 }
 
@@ -742,6 +897,16 @@ void add_CF_CheckTables_tests(void)
                CF_App_Tests_Teardown, "Test_CF_CheckTables_CallTo_CFE_TBL_GetAddress_Returns_CFE_TBL_INFO_UPDATED");
 }
 
+void add_CF_ValidateIPTable_tests(void)
+{
+    UtTest_Add(Test_CF_ValidateIPTable_FailChanHasTooManyValidIPs, cf_app_tests_Setup,
+               CF_App_Tests_Teardown, "Test_CF_ValidateIPTable_FailChanHasTooManyValidIPs");
+    UtTest_Add(Test_CF_ValidateIPTable_NULL, cf_app_tests_Setup,
+               CF_App_Tests_Teardown, "Test_CF_ValidateIPTable_NULL");
+    UtTest_Add(Test_CF_ValidateIPTable_Success, cf_app_tests_Setup,
+               CF_App_Tests_Teardown, "Test_CF_ValidateIPTable_Success");
+}
+
 void add_CF_ValidateConfigTable_tests(void)
 {
     UtTest_Add(Test_CF_ValidateConfigTable_FailBecauseTableTicksPerSecondIs0, Setup_cf_config_table_tests,
@@ -754,8 +919,12 @@ void add_CF_ValidateConfigTable_tests(void)
     UtTest_Add(Test_CF_ValidateConfigTable_FailBecauseOutgoingFileChunkSmallerThanDataArray,
                Setup_cf_config_table_tests, CF_App_Tests_Teardown,
                "Test_CF_ValidateConfigTable_FailBecauseOutgoingFileChunkSmallerThanDataArray");
+    UtTest_Add(Test_CF_ValidateConfigTable_InvalidUDPAddress, Setup_cf_config_table_tests, 
+               CF_App_Tests_Teardown, "Test_CF_ValidateConfigTable_InvalidUDPAddress");
     UtTest_Add(Test_CF_ValidateConfigTable_ConnectionTypeError, Setup_cf_config_table_tests, 
                CF_App_Tests_Teardown, "Test_CF_ValidateConfigTable_ConnectionTypeError");
+    UtTest_Add(Test_CF_ValidateConfigTable_NULL, Setup_cf_config_table_tests, CF_App_Tests_Teardown,
+               "Test_CF_ValidateConfigTable_NULL");
     UtTest_Add(Test_CF_ValidateConfigTable_Success, Setup_cf_config_table_tests, CF_App_Tests_Teardown,
                "Test_CF_ValidateConfigTable_Success");
 }
@@ -770,6 +939,14 @@ void add_CF_TableInit_tests(void)
                CF_App_Tests_Teardown, "Test_CF_TableInit_FailBecause_CFE_TBL_Manage_DidNotReturnSuccess");
     UtTest_Add(Test_CF_TableInit_FailBecause_CFE_TBL_GetAddress_DidNotReturnSuccess, cf_app_tests_Setup,
                CF_App_Tests_Teardown, "Test_CF_TableInit_FailBecause_CFE_TBL_GetAddress_DidNotReturnSuccess");
+    UtTest_Add(Test_CF_TableInit_FailBecause2nd_CFE_TBL_Register_DidNotReturnSuccess, cf_app_tests_Setup,
+               CF_App_Tests_Teardown, "Test_CF_TableInit_FailBecause2nd_CFE_TBL_Register_DidNotReturnSuccess");
+    UtTest_Add(Test_CF_TableInit_FailBecause2nd_CFE_TBL_Load_DidNotReturnSuccess, cf_app_tests_Setup,
+               CF_App_Tests_Teardown, "Test_CF_TableInit_FailBecause2nd_CFE_TBL_Load_DidNotReturnSuccess");
+    UtTest_Add(Test_CF_TableInit_FailBecause2nd_CFE_TBL_Manage_DidNotReturnSuccess, cf_app_tests_Setup,
+               CF_App_Tests_Teardown, "Test_CF_TableInit_FailBecause2nd_CFE_TBL_Manage_DidNotReturnSuccess");
+    UtTest_Add(Test_CF_TableInit_FailBecause2nd_CFE_TBL_GetAddress_DidNotReturnSuccess, cf_app_tests_Setup,
+               CF_App_Tests_Teardown, "Test_CF_TableInit_FailBecause2nd_CFE_TBL_GetAddress_DidNotReturnSuccess");
     UtTest_Add(Test_CF_TableInit_When_CFE_TBL_GetAddress_Returns_CFE_SUCCESS_SuccessAndDoNotSendEvent,
                cf_app_tests_Setup, CF_App_Tests_Teardown,
                "Test_CF_TableInit_When_CFE_TBL_GetAddress_Returns_CFE_SUCCESS_SuccessAndDoNotSendEvent");
@@ -847,6 +1024,8 @@ void UtTest_Setup(void)
     add_CF_HkCmd_tests();
 
     add_CF_CheckTables_tests();
+
+    add_CF_ValidateIPTable_tests();
 
     add_CF_ValidateConfigTable_tests();
 

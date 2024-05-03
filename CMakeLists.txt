@@ -27,8 +27,13 @@ add_cfe_app(cf ${APP_SRC_FILES})
 # This permits direct access to public headers in the fsw/inc directory
 target_include_directories(cf PUBLIC fsw/inc)
 
-# configuration table
-add_cfe_tables(cf fsw/tables/cf_def_config.c)
+set(APP_TBL_FILES
+  fsw/tables/cf_def_config.c
+  fsw/tables/cf_ips.c
+)
+
+# load cf tables
+add_cfe_tables(cf ${APP_TBL_FILES})
 
 if (ENABLE_UNIT_TESTS)
   add_subdirectory(unit-test)

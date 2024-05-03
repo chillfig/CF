@@ -517,4 +517,21 @@ CF_TxnStatus_t CF_TxnStatus_From_ConditionCode(CF_CFDP_ConditionCode_t cc);
  */
 bool CF_TxnStatus_IsError(CF_TxnStatus_t txn_stat);
 
+/************************************************************************/
+/** @brief Check if the UDP address is valid for the given channel
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       None
+ *
+ * @param udp_hostname  UDP address hostname
+ * @param udp_port      UDP address port
+ * @param chan_num      Channel number
+ *
+ * @retval CFE_SUCCESS
+ * @retval CF_NULL_POINTER_ERR if udp_hostname is NULL
+ * @retval CF_NO_IP_TBL_ERR if ips table has not been properly initialized
+ * @retval CF_INVALID_ADDR_ERR if address was not found in the ips table for the given channel
+ */
+CFE_Status_t CF_ValidateUDPAddress(const char *udp_hostname, uint16 udp_port, uint8 chan_num);
+
 #endif /* !CF_UTILS_H */

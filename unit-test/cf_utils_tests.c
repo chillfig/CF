@@ -1146,6 +1146,94 @@ void Test_CF_TxnStatus_From_ConditionCode(void)
 
 /*******************************************************************************
 **
+**  CF_ValidateUDPAddress tests
+**
+*******************************************************************************/
+
+void Test_CF_ValidateUDPAddress_NULLPtr(void)
+{
+    /* Arrange */
+    uint8 chan_num  = Any_uint8();
+    uint16 udp_port = Any_uint16();
+    int32 result    = Any_uint32();
+
+    /* Act */
+    result = CF_ValidateUDPAddress(NULL, udp_port, chan_num);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CF_NULL_POINTER_ERR);
+}
+
+void Test_CF_ValidateUDPAddress_NoIPTbl(void)
+{
+    /* Arrange */
+    uint8 chan_num                        = Any_uint8();
+    char hostname[CF_MAX_HOSTNAME_LENGTH] = "hostname";
+    uint16 udp_port                       = Any_uint16();
+    int32 result                          = Any_uint32();
+    CF_AppData.ip_table                   = NULL;
+
+    /* Act */
+    result = CF_ValidateUDPAddress(hostname, udp_port, chan_num);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CF_NO_IP_TBL_ERR);
+}
+
+void Test_CF_ValidateUDPAddress_ValidIP(void)
+{
+    /* Arrange */
+    uint8 chan_num                        = 1;
+    char hostname[CF_MAX_HOSTNAME_LENGTH] = "valid";
+    uint16 udp_port                       = 100;
+    int32 result                          = Any_uint32();
+    CF_ValidIPTable_t ip_tbl              = {};
+    CF_AppData.ip_table                   = &ip_tbl;
+
+    ip_tbl.chan[1].valid_ip_count = 4;
+    strncpy(ip_tbl.chan[1].valid_ips[0].hostname, "invalid", CF_MAX_HOSTNAME_LENGTH);
+    ip_tbl.chan[1].valid_ips[0].port = 100;
+    strncpy(ip_tbl.chan[1].valid_ips[1].hostname, "valid", CF_MAX_HOSTNAME_LENGTH);
+    ip_tbl.chan[1].valid_ips[1].port = Any_uint16_Except(100);
+    strncpy(ip_tbl.chan[1].valid_ips[2].hostname, "valid", CF_MAX_HOSTNAME_LENGTH);
+    ip_tbl.chan[1].valid_ips[2].port = 100;
+    strncpy(ip_tbl.chan[1].valid_ips[3].hostname, "invalid", CF_MAX_HOSTNAME_LENGTH);
+    ip_tbl.chan[1].valid_ips[3].port = Any_uint16_Except(100);
+
+    /* Act */
+    result = CF_ValidateUDPAddress(hostname, udp_port, chan_num);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CFE_SUCCESS);
+}
+
+void Test_CF_ValidateUDPAddress_InvalidIP(void)
+{
+    /* Arrange */
+    uint8 chan_num                        = 0;
+    char hostname[CF_MAX_HOSTNAME_LENGTH] = "valid";
+    uint16 udp_port                       = 100;
+    int32 result                          = Any_uint32();
+    CF_ValidIPTable_t ip_tbl              = {};
+    CF_AppData.ip_table                   = &ip_tbl;
+
+    ip_tbl.chan[0].valid_ip_count = 3;
+    strncpy(ip_tbl.chan[1].valid_ips[0].hostname, "invalid", CF_MAX_HOSTNAME_LENGTH);
+    ip_tbl.chan[1].valid_ips[0].port = 100;
+    strncpy(ip_tbl.chan[1].valid_ips[1].hostname, "valid", CF_MAX_HOSTNAME_LENGTH);
+    ip_tbl.chan[1].valid_ips[1].port = Any_uint16_Except(100);
+    strncpy(ip_tbl.chan[1].valid_ips[2].hostname, "invalid", CF_MAX_HOSTNAME_LENGTH);
+    ip_tbl.chan[1].valid_ips[2].port = Any_uint16_Except(100);
+
+    /* Act */
+    result = CF_ValidateUDPAddress(hostname, udp_port, chan_num);
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, CF_INVALID_ADDR_ERR);
+}
+
+/*******************************************************************************
+**
 **  cf_utils_tests UtTest_Add groups
 **
 *******************************************************************************/
@@ -1293,6 +1381,18 @@ void add_CF_WrappedLseek_tests(void)
                cf_utils_tests_Teardown, "Test_CF_WrappedLseek_Call_OS_lseek_WithGivenArgumentsAndReturnItsReturnValue");
 }
 
+void add_CF_ValidateUDPAddress_tests(void)
+{
+    UtTest_Add(Test_CF_ValidateUDPAddress_NULLPtr, cf_utils_tests_Setup,
+               cf_utils_tests_Teardown, "Test_CF_ValidateUDPAddress_NULLPtr");
+    UtTest_Add(Test_CF_ValidateUDPAddress_NoIPTbl, cf_utils_tests_Setup,
+               cf_utils_tests_Teardown, "Test_CF_ValidateUDPAddress_NoIPTbl");
+    UtTest_Add(Test_CF_ValidateUDPAddress_ValidIP, cf_utils_tests_Setup,
+               cf_utils_tests_Teardown, "Test_CF_ValidateUDPAddress_ValidIP");
+    UtTest_Add(Test_CF_ValidateUDPAddress_InvalidIP, cf_utils_tests_Setup,
+               cf_utils_tests_Teardown, "Test_CF_ValidateUDPAddress_InvalidIP");
+}
+
 /*******************************************************************************
 **
 **  cf_utils_tests UtTest_Setup
@@ -1332,4 +1432,6 @@ void UtTest_Setup(void)
     add_CF_WrappedWrite_tests();
 
     add_CF_WrappedLseek_tests();
+
+    add_CF_ValidateUDPAddress_tests();
 }

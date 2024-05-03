@@ -30,6 +30,10 @@
 #include "cf_app.h"
 #include "cf_utils.h"
 
+/** \brief Number of queues to purge when performing a switch ip command. 
+ *         This number corresponds to the number of non-history/free queues. */
+#define NUM_QUEUES_TO_PURGE (4)
+
 /**
  * @brief A callback function for use with CF_DoChanAction()
  *
@@ -549,6 +553,16 @@ void CF_CmdEnableEngine(CFE_SB_Buffer_t *msg);
  * @param msg   Pointer to command message
  */
 void CF_CmdDisableEngine(CFE_SB_Buffer_t *msg);
+
+/************************************************************************/
+/** @brief Ground command switch ip address.
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       msg must not be NULL.
+ *
+ * @param msg   Pointer to command message
+ */
+void CF_CmdSwitchIP(CFE_SB_Buffer_t *msg);
 
 /************************************************************************/
 /** @brief Process any ground command contained in the given message.

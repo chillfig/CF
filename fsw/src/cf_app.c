@@ -103,6 +103,37 @@ void CF_CheckTables(void)
     }
 }
 
+CFE_Status_t CF_ValidateIPTable(void *tbl_ptr)
+{
+    CF_ValidIPTable_t *tbl = (CF_ValidIPTable_t *)tbl_ptr;
+    CFE_Status_t ret = CFE_STATUS_VALIDATION_FAILURE;
+
+    if (tbl == NULL)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_NULL_TBL, CFE_EVS_EventType_ERROR, 
+                          "CF: ips table validation function received NULL table pointer");
+        ret = CF_NULL_POINTER_ERR;
+        goto CF_ValidateIPTable_Exit_Tag;
+    }
+
+    for (int chan_idx = 0; chan_idx < CF_NUM_CHANNELS; ++chan_idx)
+    {
+        if(tbl->chan[chan_idx].valid_ip_count > CF_MAX_VALID_IPS_PER_CHAN)
+        {
+            CFE_EVS_SendEvent(CF_EID_ERR_INIT_VALID_IPS, CFE_EVS_EventType_ERROR, 
+                              "CF: ips table channel %d has too many valid ips %d, exceeds limit of %d",
+                              chan_idx, tbl->chan[chan_idx].valid_ip_count, CF_MAX_VALID_IPS_PER_CHAN);
+            goto CF_ValidateIPTable_Exit_Tag;
+        }
+    }
+
+    /* We have passed all validation checks, the table is valid */
+    ret = CFE_SUCCESS;
+
+CF_ValidateIPTable_Exit_Tag:
+    return ret;
+}
+
 /*----------------------------------------------------------------
  *
  * Application-scope internal function
@@ -112,7 +143,15 @@ void CF_CheckTables(void)
 CFE_Status_t CF_ValidateConfigTable(void *tbl_ptr)
 {
     CF_ConfigTable_t *tbl = (CF_ConfigTable_t *)tbl_ptr;
-    CFE_Status_t      ret = CFE_STATUS_VALIDATION_FAILURE;
+    CFE_Status_t ret = CFE_STATUS_VALIDATION_FAILURE;
+
+    if (tbl == NULL)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_NULL_TBL, CFE_EVS_EventType_ERROR, 
+                          "CF: config table validation function received NULL table pointer");
+        ret = CF_NULL_POINTER_ERR;
+        goto CF_ValidateConfigTable_Exit_Tag;
+    }
 
     if (!tbl->ticks_per_second)
     {
@@ -136,17 +175,34 @@ CFE_Status_t CF_ValidateConfigTable(void *tbl_ptr)
 
     for (int chan_num = 0; chan_num < CF_NUM_CHANNELS; ++chan_num)
     {
-        if ((tbl->chan[chan_num].connection_type != CF_SB_CHANNEL) &&
-            (tbl->chan[chan_num].connection_type != CF_UDP_CHANNEL))
+        /* Only validate the UDP addresses of channels that are configured to be UDP channels */
+        if (tbl->chan[chan_num].connection_type == CF_UDP_CHANNEL)
+        {
+            ret = CF_ValidateUDPAddress(tbl->chan[chan_num].udp_config.the_other_addr.hostname, 
+                                        tbl->chan[chan_num].udp_config.the_other_addr.port, chan_num);
+            if (ret != CFE_SUCCESS)
+            {
+                CFE_EVS_SendEvent(CF_EID_ERR_INIT_UDP_ADDR, CFE_EVS_EventType_ERROR,
+                                  "CF: config table udp address (%s:%d) is not in IPs table for channel %d (status=%d)", 
+                                  tbl->chan[chan_num].udp_config.the_other_addr.hostname, 
+                                  tbl->chan[chan_num].udp_config.the_other_addr.port, chan_num, ret);
+                goto CF_ValidateConfigTable_Exit_Tag;
+            }
+        }
+        else if (tbl->chan[chan_num].connection_type != CF_SB_CHANNEL)
         {
             CFE_EVS_SendEvent(CF_EID_ERR_INIT_CONN_TYPE, CFE_EVS_EventType_ERROR,
                                 "CF: config table channel %d has invalid connection type (%d)",
                                 chan_num, tbl->chan[chan_num].connection_type);
             goto CF_ValidateConfigTable_Exit_Tag;
         }
+        else
+        {
+            /* do nothing, to comply with SSET coding standard */
+        }
     }
 
-    /* If we reach here, we have passed all validation checks */
+    /* We have passed all validation checks, the table is valid */
     ret = CFE_SUCCESS;
 
 CF_ValidateConfigTable_Exit_Tag:
@@ -163,48 +219,80 @@ CFE_Status_t CF_TableInit(void)
 {
     CFE_Status_t status;
 
+    /* Validate IP table */
+    status = CFE_TBL_Register(&CF_AppData.ip_tbl_handle, CF_IP_TABLE_NAME, sizeof(CF_ValidIPTable_t),
+                              CFE_TBL_OPT_SNGL_BUFFER | CFE_TBL_OPT_LOAD_DUMP, CF_ValidateIPTable);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_REG, CFE_EVS_EventType_ERROR,
+                          "CF: error registering ips table, returned 0x%08lx", (unsigned long)status);
+        goto CF_TableInit_Exit_Tag;
+    }
+
+    status = CFE_TBL_Load(CF_AppData.ip_tbl_handle, CFE_TBL_SRC_FILE, CF_IP_TABLE_FILENAME);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_LOAD, CFE_EVS_EventType_ERROR,
+                          "CF: error loading ips table, returned 0x%08lx", (unsigned long)status);
+        goto CF_TableInit_Exit_Tag;
+    }
+    
+    status = CFE_TBL_Manage(CF_AppData.ip_tbl_handle);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_MANAGE, CFE_EVS_EventType_ERROR,
+                          "CF: error in CFE_TBL_Manage for ips table, returned 0x%08lx", (unsigned long)status);
+        goto CF_TableInit_Exit_Tag;
+    }
+
+    status = CFE_TBL_GetAddress((void **)&CF_AppData.ip_table, CF_AppData.ip_tbl_handle);
+    /* status will be CFE_TBL_INFO_UPDATED because it was just loaded, but we can use CFE_SUCCESS too */
+    if ((status != CFE_TBL_INFO_UPDATED) && (status != CFE_SUCCESS))
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_GETADDR, CFE_EVS_EventType_ERROR,
+                          "CF: error getting table address for ips table, returned 0x%08lx", (unsigned long)status);
+        goto CF_TableInit_Exit_Tag;
+    }
+    
+    /* Validate config table */
     status = CFE_TBL_Register(&CF_AppData.config_handle, CF_CONFIG_TABLE_NAME, sizeof(CF_ConfigTable_t),
                               CFE_TBL_OPT_SNGL_BUFFER | CFE_TBL_OPT_LOAD_DUMP, CF_ValidateConfigTable);
     if (status != CFE_SUCCESS)
     {
         CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_REG, CFE_EVS_EventType_ERROR,
-                          "CF: error registering table, returned 0x%08lx", (unsigned long)status);
-    }
-    else
-    {
-        status = CFE_TBL_Load(CF_AppData.config_handle, CFE_TBL_SRC_FILE, CF_CONFIG_TABLE_FILENAME);
-        if (status != CFE_SUCCESS)
-        {
-            CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_LOAD, CFE_EVS_EventType_ERROR,
-                              "CF: error loading table, returned 0x%08lx", (unsigned long)status);
-        }
+                          "CF: error registering config table, returned 0x%08lx", (unsigned long)status);
+        goto CF_TableInit_Exit_Tag;
     }
 
-    if (status == CFE_SUCCESS)
+    status = CFE_TBL_Load(CF_AppData.config_handle, CFE_TBL_SRC_FILE, CF_CONFIG_TABLE_FILENAME);
+    if (status != CFE_SUCCESS)
     {
-        status = CFE_TBL_Manage(CF_AppData.config_handle);
-        if (status != CFE_SUCCESS)
-        {
-            CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_MANAGE, CFE_EVS_EventType_ERROR,
-                              "CF: error in CFE_TBL_Manage, returned 0x%08lx", (unsigned long)status);
-        }
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_LOAD, CFE_EVS_EventType_ERROR,
+                         "CF: error loading config table, returned 0x%08lx", (unsigned long)status);
+        goto CF_TableInit_Exit_Tag;
     }
 
-    if (status == CFE_SUCCESS)
+    status = CFE_TBL_Manage(CF_AppData.config_handle);
+    if (status != CFE_SUCCESS)
     {
-        status = CFE_TBL_GetAddress((void **)&CF_AppData.config_table, CF_AppData.config_handle);
-        /* status will be CFE_TBL_INFO_UPDATED because it was just loaded, but we can use CFE_SUCCESS too */
-        if ((status != CFE_TBL_INFO_UPDATED) && (status != CFE_SUCCESS))
-        {
-            CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_GETADDR, CFE_EVS_EventType_ERROR,
-                              "CF: error getting table address, returned 0x%08lx", (unsigned long)status);
-        }
-        else
-        {
-            status = CFE_SUCCESS;
-        }
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_MANAGE, CFE_EVS_EventType_ERROR,
+                          "CF: error in CFE_TBL_Manage for config table, returned 0x%08lx", (unsigned long)status);
+        goto CF_TableInit_Exit_Tag;
     }
 
+    status = CFE_TBL_GetAddress((void **)&CF_AppData.config_table, CF_AppData.config_handle);
+    /* status will be CFE_TBL_INFO_UPDATED because it was just loaded, but we can use CFE_SUCCESS too */
+    if ((status != CFE_TBL_INFO_UPDATED) && (status != CFE_SUCCESS))
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_INIT_TBL_GETADDR, CFE_EVS_EventType_ERROR,
+                            "CF: error getting table address for config table, returned 0x%08lx", (unsigned long)status);
+        goto CF_TableInit_Exit_Tag;
+    }
+
+    /* All of table validation and initialization passed */
+    status = CFE_SUCCESS;
+
+CF_TableInit_Exit_Tag:
     return status;
 }
 

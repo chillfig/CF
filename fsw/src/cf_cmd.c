@@ -35,6 +35,7 @@
 
 #include "cf_cfdp.h"
 #include "cf_cmd.h"
+#include "cf_udp.h"
 
 #include <string.h>
 
@@ -1164,6 +1165,85 @@ void CF_CmdDisableEngine(CFE_SB_Buffer_t *msg)
  * See description in cf_cmd.h for argument/return detail
  *
  *-----------------------------------------------------------------*/
+void CF_CmdSwitchIP(CFE_SB_Buffer_t *msg)
+{
+    uint8 chan_num = 0;
+    CFE_Status_t status = CF_ERROR;
+    CF_Channel_t *chan_ptr = NULL;
+    CF_ChannelConfig_t *chan_cfg_ptr = NULL;
+    CF_UDP_SocketAddress_t *curr_addr_ptr = NULL;
+    static const CF_QueueIdx_t close_queues[NUM_QUEUES_TO_PURGE] = {CF_QueueIdx_PEND, CF_QueueIdx_TXA,
+                                                                    CF_QueueIdx_TXW, CF_QueueIdx_RX};
+    CF_SwitchIPCmd_t *switch_ip_msg = (CF_SwitchIPCmd_t *)msg;
+
+    chan_num = switch_ip_msg->chan_num;
+    if (chan_num >= CF_NUM_CHANNELS)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_CMD_CHAN_PARAM, CFE_EVS_EventType_ERROR,
+                          "CF: switch ip: channel parameter out of range. received %d", chan_num);
+        CF_AppData.hk.counters.err++;
+        goto CF_CmdSwitchIP_Exit_Tag;
+    }
+
+    chan_ptr = &CF_AppData.engine.channels[chan_num];
+    chan_cfg_ptr = &CF_AppData.config_table->chan[chan_num];
+    curr_addr_ptr = &chan_cfg_ptr->udp_config.the_other_addr;
+
+    if (chan_cfg_ptr->connection_type != CF_UDP_CHANNEL)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_CMD_CONN_TYPE, CFE_EVS_EventType_ERROR,
+                          "CF: switch ip: channel %d has invalid connection type (%d)", 
+                          chan_num, chan_cfg_ptr->connection_type);
+        CF_AppData.hk.counters.err++;
+        goto CF_CmdSwitchIP_Exit_Tag;
+    }
+
+    /* Check that the commanded address is in the ips table */
+    status = CF_ValidateUDPAddress(switch_ip_msg->dst_hostname, switch_ip_msg->dst_port, chan_num);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_EVS_SendEvent(CF_EID_ERR_CMD_UDP_ADDR, CFE_EVS_EventType_ERROR,
+                          "CF: switch ip: udp address (%s:%d) is not in IPs table for channel %d (status=%d)", 
+                          switch_ip_msg->dst_hostname, switch_ip_msg->dst_port, chan_num, status);
+        CF_AppData.hk.counters.err++;
+        goto CF_CmdSwitchIP_Exit_Tag;
+    }
+
+    /* Check if the commanded address is already the current address */
+    if ((strncmp(switch_ip_msg->dst_hostname, curr_addr_ptr->hostname, sizeof(switch_ip_msg->dst_hostname)) == 0) &&
+        (switch_ip_msg->dst_port == curr_addr_ptr->port))
+    {
+        CFE_EVS_SendEvent(CF_EID_INF_CMD_CURR_ADDR, CFE_EVS_EventType_INFORMATION,
+                          "CF: switch ip: udp address (%s:%d) is already the current address for channel %d", 
+                          switch_ip_msg->dst_hostname, switch_ip_msg->dst_port, chan_num);
+        CF_AppData.hk.counters.cmd++;
+        goto CF_CmdSwitchIP_Exit_Tag;
+    }
+    
+    /* Purge all transactions on this channel */
+    for (int idx = 0; idx < NUM_QUEUES_TO_PURGE; ++idx)
+    {
+        CF_CList_Traverse(chan_ptr->qs[close_queues[idx]], CF_PurgeTransaction, NULL);
+    }
+    /* Update the channel's IP in the CF configuration table */
+    strncpy(curr_addr_ptr->hostname, switch_ip_msg->dst_hostname, sizeof(curr_addr_ptr->hostname));
+    curr_addr_ptr->port = switch_ip_msg->dst_port;
+
+    CFE_EVS_SendEvent(CF_EID_INF_CMD_SWITCH_IP, CFE_EVS_EventType_INFORMATION, 
+                      "CF: switched channel %d's UDP address to (%s:%d)", 
+                      chan_num, switch_ip_msg->dst_hostname, switch_ip_msg->dst_port);
+    CF_AppData.hk.counters.cmd++;
+
+CF_CmdSwitchIP_Exit_Tag:
+    return;
+}
+
+/*----------------------------------------------------------------
+ *
+ * Application-scope internal function
+ * See description in cf_cmd.h for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
 void CF_ProcessGroundCommand(CFE_SB_Buffer_t *msg)
 {
     static void (*const fns[CF_NUM_COMMANDS])(CFE_SB_Buffer_t *) = {
@@ -1191,6 +1271,7 @@ void CF_ProcessGroundCommand(CFE_SB_Buffer_t *msg)
         CF_CmdPurgeQueue,    /* CF_PURGE_QUEUE_CC */
         CF_CmdEnableEngine,  /* CF_ENABLE_ENGINE_CC */
         CF_CmdDisableEngine, /* CF_DISABLE_ENGINE_CC */
+        CF_CmdSwitchIP,      /* CF_SWITCH_IP_CC */
     };
 
     static const uint16 expected_lengths[CF_NUM_COMMANDS] = {
@@ -1218,6 +1299,7 @@ void CF_ProcessGroundCommand(CFE_SB_Buffer_t *msg)
         sizeof(CF_UnionArgsCmd_t), /* CF_PURGE_QUEUE_CC */
         sizeof(CF_NoArgsCmd_t),    /* CF_ENABLE_ENGINE_CC */
         sizeof(CF_NoArgsCmd_t),    /* CF_DISABLE_ENGINE_CC */
+        sizeof(CF_SwitchIPCmd_t),  /* CF_SWITCH_IP_CC */
     };
 
     CFE_MSG_FcnCode_t cmd = 0;

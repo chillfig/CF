@@ -1543,6 +1543,39 @@
  */
 #define CF_EID_ERR_INIT_CONN_TYPE (171)
 
+/**
+ * \brief CF Channel Initialize Valid IP Failed Event ID
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Failure validating ip table during initialization
+ */
+#define CF_EID_ERR_INIT_VALID_IPS (172)
+
+/**
+ * \brief CF Channel Initialize Invalid UDP Address Event ID
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Config table defines a UDP address not found in the ips table for the given channel
+ */
+#define CF_EID_ERR_INIT_UDP_ADDR (173)
+
+/**
+ * \brief CF Channel Initialize Null Table Pointer Event ID
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Table validation function receives a NULL pointer argument
+ */
+#define CF_EID_ERR_INIT_NULL_TBL (174)
+
 /**************************************************************************
  * CF JSC added event IDs - Protocol data unit
  */
@@ -1591,6 +1624,54 @@
  *  UDP channel receives a PDU message with a mid that doesn't match the channel's designated input mid
  */
 #define CF_EID_ERR_CFDP_INVALID_MID  (183)
+
+/**************************************************************************
+ * CF JSC added event IDs - Command processing
+ */
+
+/**
+ * \brief CF Switch IP Command Received Event ID
+ *
+ *  \par Type: INFORMATION
+ *
+ *  \par Cause:
+ *
+ *  Receipt and successful processing of switch ip command
+ */
+#define CF_EID_INF_CMD_SWITCH_IP (185)
+
+/**
+ * \brief CF Switch IP Command Invalid Connection Type Event ID
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Switch IP command received for a non-UDP channel
+ */
+#define CF_EID_ERR_CMD_CONN_TYPE (186)
+
+/**
+ * \brief CF Switch IP Command Invalid IP Address Event ID
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Switch IP command received for a UDP address not defined as valid for the given channel
+ */
+#define CF_EID_ERR_CMD_UDP_ADDR (187)
+
+/**
+ * \brief CF Switch IP Command Current IP Address Event ID
+ *
+ *  \par Type: INFORMATION
+ *
+ *  \par Cause:
+ *
+ *  Switch IP command received for a UDP address matching the current UDP address for the given channel
+ */
+#define CF_EID_INF_CMD_CURR_ADDR (188)
 
 /**\}*/
 

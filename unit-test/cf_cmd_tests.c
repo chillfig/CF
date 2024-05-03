@@ -22,6 +22,7 @@
 #include "cf_cmd.h"
 #include "cf_events.h"
 #include "cf_test_alt_handler.h"
+#include "cf_udp.h"
 
 /*
  * In order to properly instantiate buffers to pass to functions that
@@ -3768,6 +3769,202 @@ void Test_CF_CmdDisableEngine_WhenEngineDisabledAndIncrementErrCounterThenFail(v
 
 /*******************************************************************************
 **
+**  CF_CmdSwitchIP tests
+**
+*******************************************************************************/
+
+void Test_CF_CmdSwitchIP_InvalidChannel(void)
+{
+    /* Arrange */
+    CF_SwitchIPCmd_t switch_ip_msg          = {};
+    CFE_SB_Buffer_t *arg_msg                = (CFE_SB_Buffer_t *)&switch_ip_msg;
+    uint16           initial_hk_cmd_counter = Any_uint16();
+    uint16           initial_hk_err_counter = Any_uint16();
+
+    CF_AppData.engine.enabled = 1; /* 1 is enabled */
+
+    CF_AppData.hk.counters.cmd = initial_hk_cmd_counter;
+    CF_AppData.hk.counters.err = initial_hk_err_counter;
+
+    switch_ip_msg.chan_num = CF_NUM_CHANNELS; /* channel number exceeds limit */
+
+    /* Act */
+    CF_CmdSwitchIP(arg_msg);
+
+    /* Assert */
+    UT_CF_AssertEventID(CF_EID_ERR_CMD_CHAN_PARAM);
+
+    /* Assert for incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, initial_hk_cmd_counter);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, (initial_hk_err_counter + 1) & 0xFFFF);
+}
+
+void Test_CF_CmdSwitchIP_InvalidConnType(void)
+{
+    /* Arrange */
+    CF_SwitchIPCmd_t switch_ip_msg          = {};
+    CFE_SB_Buffer_t *arg_msg                = (CFE_SB_Buffer_t *)&switch_ip_msg;
+    uint16           initial_hk_cmd_counter = Any_uint16();
+    uint16           initial_hk_err_counter = Any_uint16();
+    CF_ConfigTable_t config_table;
+
+    CF_AppData.engine.enabled = 1; /* 1 is enabled */
+    CF_AppData.config_table = &config_table;
+
+    CF_AppData.hk.counters.cmd = initial_hk_cmd_counter;
+    CF_AppData.hk.counters.err = initial_hk_err_counter;
+
+    switch_ip_msg.chan_num = 1;
+    config_table.chan[1].connection_type = CF_SB_CHANNEL;
+
+    /* Act */
+    CF_CmdSwitchIP(arg_msg);
+
+    /* Assert */
+    UT_CF_AssertEventID(CF_EID_ERR_CMD_CONN_TYPE);
+
+    /* Assert for incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, initial_hk_cmd_counter);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, (initial_hk_err_counter + 1) & 0xFFFF);
+}
+
+void Test_CF_CmdSwitchIP_InvalidUDPAddress(void)
+{
+    /* Arrange */
+    CF_SwitchIPCmd_t switch_ip_msg          = {};
+    CFE_SB_Buffer_t *arg_msg                = (CFE_SB_Buffer_t *)&switch_ip_msg;
+    uint16           initial_hk_cmd_counter = Any_uint16();
+    uint16           initial_hk_err_counter = Any_uint16();
+    CF_ConfigTable_t config_table;
+
+    CF_AppData.engine.enabled = 1; /* 1 is enabled */
+    CF_AppData.config_table = &config_table;
+
+    UT_SetDeferredRetcode(UT_KEY(CF_ValidateUDPAddress), 1, CF_NO_IP_TBL_ERR);
+
+    CF_AppData.hk.counters.cmd = initial_hk_cmd_counter;
+    CF_AppData.hk.counters.err = initial_hk_err_counter;
+
+    switch_ip_msg.chan_num = 1;
+    config_table.chan[1].connection_type = CF_UDP_CHANNEL;
+
+    /* Act */
+    CF_CmdSwitchIP(arg_msg);
+
+    /* Assert */
+    UT_CF_AssertEventID(CF_EID_ERR_CMD_UDP_ADDR);
+
+    /* Assert for incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, initial_hk_cmd_counter);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, (initial_hk_err_counter + 1) & 0xFFFF);
+}
+
+void Test_CF_CmdSwitchIP_CurrentAddress(void)
+{
+    /* Arrange */
+    CF_SwitchIPCmd_t switch_ip_msg          = {0};
+    CFE_SB_Buffer_t *arg_msg                = (CFE_SB_Buffer_t *)&switch_ip_msg;
+    uint16           initial_hk_cmd_counter = Any_uint16();
+    uint16           initial_hk_err_counter = Any_uint16();
+    CF_ConfigTable_t config_table           = {0};
+
+    CF_AppData.engine.enabled = 1; /* 1 is enabled */
+    CF_AppData.config_table = &config_table;
+
+    UT_SetDeferredRetcode(UT_KEY(CF_ValidateUDPAddress), 1, CFE_SUCCESS);
+    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CFE_SUCCESS);
+
+    CF_AppData.hk.counters.cmd = initial_hk_cmd_counter;
+    CF_AppData.hk.counters.err = initial_hk_err_counter;
+
+    switch_ip_msg.chan_num = 1;
+    strncpy(switch_ip_msg.dst_hostname, "duplicate", CF_MAX_HOSTNAME_LENGTH);
+    switch_ip_msg.dst_port = 99;
+    config_table.chan[1].connection_type = CF_UDP_CHANNEL;
+    strncpy(config_table.chan[1].udp_config.the_other_addr.hostname, "duplicate", CF_MAX_HOSTNAME_LENGTH);
+    config_table.chan[1].udp_config.the_other_addr.port = 99;
+
+    /* Act */
+    CF_CmdSwitchIP(arg_msg);
+
+    /* Assert */
+    UT_CF_AssertEventID(CF_EID_INF_CMD_CURR_ADDR);
+
+    /* Assert for incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, (initial_hk_cmd_counter + 1) & 0xFFFF);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, initial_hk_err_counter);
+}
+
+void Test_CF_CmdSwitchIP_Nominal(void)
+{
+    /* Arrange */
+    CF_SwitchIPCmd_t switch_ip_msg          = {0};
+    CFE_SB_Buffer_t *arg_msg                = (CFE_SB_Buffer_t *)&switch_ip_msg;
+    uint16           initial_hk_cmd_counter = Any_uint16();
+    uint16           initial_hk_err_counter = Any_uint16();
+    CF_ConfigTable_t config_table           = {0};
+
+    CF_AppData.engine.enabled = 1; /* 1 is enabled */
+    CF_AppData.config_table = &config_table;
+
+    UT_SetDeferredRetcode(UT_KEY(CF_ValidateUDPAddress), 1, CFE_SUCCESS);
+    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CFE_SUCCESS);
+
+    CF_AppData.hk.counters.cmd = initial_hk_cmd_counter;
+    CF_AppData.hk.counters.err = initial_hk_err_counter;
+
+    switch_ip_msg.chan_num = 1;
+    switch_ip_msg.dst_port = 100;
+    config_table.chan[1].connection_type = CF_UDP_CHANNEL;
+
+    /* Act */
+    CF_CmdSwitchIP(arg_msg);
+
+    /* Assert */
+    UT_CF_AssertEventID(CF_EID_INF_CMD_SWITCH_IP);
+
+    /* Assert for incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, (initial_hk_cmd_counter + 1) & 0xFFFF);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, initial_hk_err_counter );
+}
+
+void Test_CF_CmdSwitchIP_NominalDiffHost(void)
+{
+    /* Arrange */
+    CF_SwitchIPCmd_t switch_ip_msg          = {0};
+    CFE_SB_Buffer_t *arg_msg                = (CFE_SB_Buffer_t *)&switch_ip_msg;
+    uint16           initial_hk_cmd_counter = Any_uint16();
+    uint16           initial_hk_err_counter = Any_uint16();
+    CF_ConfigTable_t config_table           = {0};
+
+    CF_AppData.engine.enabled = 1; /* 1 is enabled */
+    CF_AppData.config_table = &config_table;
+
+    UT_SetDeferredRetcode(UT_KEY(CF_ValidateUDPAddress), 1, CFE_SUCCESS);
+    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CFE_SUCCESS);
+
+    CF_AppData.hk.counters.cmd = initial_hk_cmd_counter;
+    CF_AppData.hk.counters.err = initial_hk_err_counter;
+
+    switch_ip_msg.chan_num = 1;
+    strncpy(switch_ip_msg.dst_hostname, "hostname", CF_MAX_HOSTNAME_LENGTH);
+    switch_ip_msg.dst_port = 100;
+    config_table.chan[1].connection_type = CF_UDP_CHANNEL;
+    strncpy(config_table.chan[1].udp_config.the_other_addr.hostname, "oldhost", CF_MAX_HOSTNAME_LENGTH);
+
+    /* Act */
+    CF_CmdSwitchIP(arg_msg);
+
+    /* Assert */
+    UT_CF_AssertEventID(CF_EID_INF_CMD_SWITCH_IP);
+
+    /* Assert for incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, (initial_hk_cmd_counter + 1) & 0xFFFF);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, initial_hk_err_counter );
+}
+
+/*******************************************************************************
+**
 **  CF_ProcessGroundCommand tests
 **
 *******************************************************************************/
@@ -4294,6 +4491,22 @@ void add_CF_CmdDisableEngine_tests(void)
                cf_cmd_tests_Teardown, "Test_CF_CmdDisableEngine_WhenEngineDisabledAndIncrementErrCounterThenFail");
 }
 
+void add_CF_CmdSwitchIP_tests(void)
+{
+    UtTest_Add(Test_CF_CmdSwitchIP_InvalidChannel, cf_cmd_tests_Setup, 
+               cf_cmd_tests_Teardown, "Test_CF_CmdSwitchIP_InvalidChannel");
+    UtTest_Add(Test_CF_CmdSwitchIP_InvalidConnType, cf_cmd_tests_Setup, 
+               cf_cmd_tests_Teardown, "Test_CF_CmdSwitchIP_InvalidConnType");
+    UtTest_Add(Test_CF_CmdSwitchIP_InvalidUDPAddress, cf_cmd_tests_Setup, 
+               cf_cmd_tests_Teardown, "Test_CF_CmdSwitchIP_InvalidUDPAddress");
+    UtTest_Add(Test_CF_CmdSwitchIP_CurrentAddress, cf_cmd_tests_Setup, 
+               cf_cmd_tests_Teardown, "Test_CF_CmdSwitchIP_CurrentAddress");
+    UtTest_Add(Test_CF_CmdSwitchIP_Nominal, cf_cmd_tests_Setup, 
+               cf_cmd_tests_Teardown, "Test_CF_CmdSwitchIP_Nominal");
+    UtTest_Add(Test_CF_CmdSwitchIP_NominalDiffHost, cf_cmd_tests_Setup, 
+               cf_cmd_tests_Teardown, "Test_CF_CmdSwitchIP_NominalDiffHost");
+}
+
 void add_CF_ProcessGroundCommand_tests(void)
 {
     UtTest_Add(Test_CF_ProcessGroundCommand_When_cmd_EqTo_CF_NUM_COMMANDS_FailAndSendEvent, cf_cmd_tests_Setup,
@@ -4393,6 +4606,8 @@ void UtTest_Setup(void)
     add_CF_CmdEnableEngine_tests();
 
     add_CF_CmdDisableEngine_tests();
+
+    add_CF_CmdSwitchIP_tests();
 
     add_CF_ProcessGroundCommand_tests();
 }
