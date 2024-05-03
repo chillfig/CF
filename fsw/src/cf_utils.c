@@ -586,3 +586,48 @@ CF_TxnStatus_t CF_TxnStatus_From_ConditionCode(CF_CFDP_ConditionCode_t cc)
     /* All CFDP CC values directly correspond to a Transaction Status of the same numeric value */
     return (CF_TxnStatus_t)cc;
 }
+
+/*----------------------------------------------------------------
+ *
+ * Function: CF_ValidateUDPAddress
+ *
+ * Application-scope internal function
+ * See description in cf_utils.h for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
+CFE_Status_t CF_ValidateUDPAddress(const char *udp_hostname, uint16 udp_port, uint8 chan_num)
+{
+    CF_ValidIP_t *valid_ip_ptr = NULL;
+    CFE_Status_t ret = CF_INVALID_ADDR_ERR;
+
+    if (udp_hostname == NULL)
+    {
+        ret = CF_NULL_POINTER_ERR;
+        goto CF_ValidateUDPAddress_Exit_Tag;
+    }
+
+    if (CF_AppData.ip_table == NULL)
+    {
+        ret = CF_NO_IP_TBL_ERR;
+        goto CF_ValidateUDPAddress_Exit_Tag;
+    }
+
+    /* Check if the specified IP address is valid for the given connection */
+    for (int idx = 0; idx < CF_AppData.ip_table->chan[chan_num].valid_ip_count; ++idx)
+    {
+        valid_ip_ptr = &CF_AppData.ip_table->chan[chan_num].valid_ips[idx];
+
+        if ((strncmp(valid_ip_ptr->hostname, udp_hostname, sizeof(valid_ip_ptr->hostname)) == 0) &&
+            (valid_ip_ptr->port == udp_port))
+        {
+            /* UDP address was found in the ips table, so it is valid */
+            ret = CFE_SUCCESS;
+            goto CF_ValidateUDPAddress_Exit_Tag;
+        }
+    }
+
+    /* We did not find the address in the ips table, so return invalid address error */
+
+CF_ValidateUDPAddress_Exit_Tag:
+    return ret;
+}

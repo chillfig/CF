@@ -61,6 +61,10 @@
 #define CF_SOCKET_SEND_ERR             -13 /**< \brief Socket send failure */
 #define CF_SOCKET_RECV_ERR             -14 /**< \brief Socket receive failure */
 #define CF_INVALID_SRC_ERR             -15 /**< \brief Message received from unexpected source */
+
+#define CF_NO_IP_TBL_ERR               -16 /**< \brief IP table was not loaded properly */
+#define CF_INVALID_ADDR_ERR            -17 /**< \brief Invalid ip address */
+
 /**\}*/
 
 /**
@@ -93,7 +97,9 @@ typedef struct
     CFE_SB_PipeId_t cmd_pipe;
 
     CFE_TBL_Handle_t  config_handle;
-    CF_ConfigTable_t *config_table;
+    CF_ConfigTable_t  *config_table;
+    CFE_TBL_Handle_t  ip_tbl_handle;
+    CF_ValidIPTable_t *ip_table;
 
     CF_Engine_t engine;
 } CF_AppData_t;
@@ -136,6 +142,22 @@ void CF_HkCmd(void);
  *       None
  */
 void CF_CheckTables(void);
+
+/************************************************************************/
+/** @brief Validation function for the ips table.
+ *
+ * @par Description
+ *       Checks that the ips table being loaded has correct data.
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       None
+ *
+ *
+ * @retval #CFE_SUCCESS \copydoc CFE_SUCCESS
+ * @retval CFE_STATUS_VALIDATION_FAILURE if the ips table fails one of the validation checks
+ *
+ */
+CFE_Status_t CF_ValidateIPTable(void *tbl_ptr);
 
 /************************************************************************/
 /** @brief Validation function for config table.

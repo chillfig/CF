@@ -849,8 +849,41 @@ typedef enum
      */
     CF_DISABLE_ENGINE_CC = 23,
 
+    /**
+     * \brief Switch IP
+     *
+     *  \par Description
+     *       Switch IP address for a single UDP channel, abandoning all transactions on the channel.
+     *
+     *  \par Command Structure
+     *       #CF_SwitchIPCmd_t
+     *
+     *  \par Command Verification
+     *       Successful execution of this command may be verified with
+     *       the following telemetry:
+     *       - #CF_HkPacket_t.counters #CF_HkCmdCounters_t.cmd will increment
+     *       - #CF_EID_INF_CMD_SWITCH_IP
+     *
+     *  \par Error Conditions
+     *       This command may fail for the following reason(s):
+     *       - Command packet length not as expected, #CF_EID_ERR_CMD_GCMD_LEN
+     *       - Invalid channel number, #CF_EID_ERR_CMD_CHAN_PARAM
+     *       - Invalid channel connection type, #CF_EID_ERR_CMD_CONN_TYPE
+     *       - Invalid UDP address, #CF_EID_ERR_CMD_UDP_ADDR
+     *       - UDP initialization failed, #CF_EID_ERR_INIT_UDP
+     *
+     *  \par Evidence of failure may be found in the following telemetry:
+     *       - #CF_HkPacket_t.counters #CF_HkCmdCounters_t.err will increment
+     *
+     *  \par Criticality
+     *       None
+     *
+     *  \sa #CF_SWITCH_IP_CC
+     */
+    CF_SWITCH_IP_CC = 24,
+
     /** \brief Command code limit used for validity check and array sizing */
-    CF_NUM_COMMANDS = 24,
+    CF_NUM_COMMANDS = 25,
 } CF_CMDS;
 
 /**\}*/
@@ -1025,6 +1058,20 @@ typedef struct CF_TransactionCmd
     uint8                   chan;       /**< \brief Channel number: 254=use ts, 255=all channels, else channel */
     uint8                   spare[3];   /**< \brief Alignment spare for 32-bit multiple */
 } CF_TransactionCmd_t;
+
+/**
+ * \brief Switch IP command structure
+ *
+ * For command details see #CF_SWITCH_IP_CC
+ */
+typedef struct CF_SwitchIPCmd
+{
+    CFE_MSG_CommandHeader_t cmd_header;                           /**< \brief Command header */
+    uint8                   chan_num;                             /**< \brief Channel number */
+    uint8                   padding;                              /**< \brief Padding */
+    uint16                  dst_port;                             /**< \brief Destination port */
+    char                    dst_hostname[CF_MAX_HOSTNAME_LENGTH]; /**< \brief Destination hostname */
+} CF_SwitchIPCmd_t;
 
 /**\}*/
 

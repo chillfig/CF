@@ -40,6 +40,10 @@
 #error Must have at least one channel.
 #endif
 
+#if CF_MAX_VALID_IPS_PER_CHAN > UINT32_MAX
+#error Valid ip count must fit in a uint32.
+#endif
+
 #if CF_NUM_HISTORIES > 65535
 #error refactor code for 32 bit CF_NUM_HISTORIES
 #endif

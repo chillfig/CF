@@ -119,4 +119,30 @@ typedef struct CF_ConfigTable
     char tmp_dir[CF_FILENAME_MAX_PATH]; /**< directory to put temp files */
 } CF_ConfigTable_t;
 
+/**
+ * \brief Structure for a single valid IP for a channel
+ */
+typedef struct CF_ValidIP
+{
+    char hostname[CF_MAX_HOSTNAME_LENGTH]; /**< \brief Destination hostname or IP address */
+    uint16 port;                           /**< \brief Destination port */
+} CF_ValidIP_t;
+
+/**
+ * \brief Structure for a single channel's valid IPs
+ */
+typedef struct CF_ChannelValidIPs
+{
+    uint32 valid_ip_count;                             /**< \brief Valid IP count */
+    CF_ValidIP_t valid_ips[CF_MAX_VALID_IPS_PER_CHAN]; /**< \brief Valid IP addresses */
+} CF_ChannelValidIPs_t;
+
+/**
+ * \brief Top-level CFDP valid IP address structure
+ */
+typedef struct CF_ValidIPTable
+{
+    CF_ChannelValidIPs_t chan[CF_NUM_CHANNELS]; /**< \brief Valid IPs for each channel */
+} CF_ValidIPTable_t;
+
 #endif /* !CF_TBLDEFS_H */

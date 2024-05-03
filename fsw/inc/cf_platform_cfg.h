@@ -287,6 +287,30 @@ typedef uint32 CF_TransactionSeq_t;
 #define CF_CONFIG_TABLE_FILENAME ("/cf/cf_def_config.tbl")
 
 /**
+ *  @brief Name of the CF IPs Table
+ *
+ *  @par Description:
+ *       This parameter defines the name of the CF IPs Table.
+ *
+ *  @par Limits
+ *       The length of this string, including the NULL terminator cannot exceed
+ *       the #OS_MAX_PATH_LEN value.
+ */
+#define CF_IP_TABLE_NAME ("ips_table")
+
+/**
+ *  @brief CF IPs Table Filename
+ *
+ *  @par Description:
+ *       The value of this constant defines the filename of the CF IPs Table
+ *
+ *  @par Limits
+ *       The length of this string, including the NULL terminator cannot exceed
+ *       the #OS_MAX_PATH_LEN value.
+ */
+#define CF_IP_TABLE_FILENAME ("/cf/cf_ips.tbl")
+
+/**
  *  @brief Maximum file name length.
  *
  *  @par Limits:
@@ -326,6 +350,17 @@ typedef uint32 CF_TransactionSeq_t;
  *      don the stack, so a corresponding increase in the stack allocation for this app should be required.
  */
 #define CF_MAX_HOSTNAME_LENGTH  (64)
+
+/**
+ * \platform_cfg Maximum number of valid IPs per channel
+ * 
+ * \par Description:
+ *      The maximum number of valid IP addresses for any single channel. This value (in combination with CF_NUM_CHANNELS)
+ *      determines the size of the valid IP address table.
+ * 
+ * \par Limits:
+ */
+#define CF_MAX_VALID_IPS_PER_CHAN  (16)
 
 /**
  *  @brief R2 CRC calc chunk size

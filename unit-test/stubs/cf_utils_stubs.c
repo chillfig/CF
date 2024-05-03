@@ -280,6 +280,24 @@ CF_CFDP_ConditionCode_t CF_TxnStatus_To_ConditionCode(CF_TxnStatus_t txn_stat)
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for CF_ValidateUDPAddress()
+ * ----------------------------------------------------
+ */
+CFE_Status_t CF_ValidateUDPAddress(const char *udp_hostname, uint16 udp_port, uint8 chan_num)
+{
+    UT_GenStub_SetupReturnBuffer(CF_ValidateUDPAddress, CFE_Status_t);
+
+    UT_GenStub_AddParam(CF_ValidateUDPAddress, const char *, udp_hostname);
+    UT_GenStub_AddParam(CF_ValidateUDPAddress, uint16, udp_port);
+    UT_GenStub_AddParam(CF_ValidateUDPAddress, uint8, chan_num);
+
+    UT_GenStub_Execute(CF_ValidateUDPAddress, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CF_ValidateUDPAddress, CFE_Status_t);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for CF_WrappedClose()
  * ----------------------------------------------------
  */
