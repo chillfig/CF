@@ -60,12 +60,16 @@ add_cfe_coverage_stubs(cf_internal
   stubs/cf_timer_stubs.c
   stubs/cf_utils_handlers.c
   stubs/cf_utils_stubs.c
+  stubs/stub_libc_stdio.c
 )
 
 target_link_libraries(coverage-cf_internal-stubs ut_core_api_stubs ut_assert)
 target_include_directories(coverage-cf_internal-stubs PUBLIC utilities)
 target_include_directories(coverage-cf_internal-stubs PUBLIC ../fsw/inc)
 target_include_directories(coverage-cf_internal-stubs PUBLIC ../fsw/src)
+
+# Stub includes needed for all targets
+include_directories(stubs)
 
 # Generate a dedicated "testrunner" executable for each test file
 # Accomplish this by cycling through all the app's source files,
@@ -88,5 +92,10 @@ foreach(SRCFILE ${APP_SRC_FILES})
 
     # CF test cases should be linked with stubs for other internal CF units
     add_cfe_coverage_dependency(cf "${UNIT_NAME}" cf_internal)
+
+    # Include overrides for unit under test
+    target_include_directories(coverage-cf-${UNIT_NAME}-object BEFORE PRIVATE
+        stubs/override_inc
+    )
 
 endforeach()

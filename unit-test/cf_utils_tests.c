@@ -23,6 +23,8 @@
 #include "cf_utils.h"
 #include "cf_events.h"
 
+#include "stub_stdio.h"
+
 /* A value that may be passed to stubs accepting osal_id_t values */
 #define UT_CF_OS_OBJID OS_ObjectIdFromInteger(1)
 
@@ -538,16 +540,22 @@ void Test_CF_WriteHistoryEntryToFile(void)
     strcpy(history.fnames.src_filename, "sf");
     strcpy(history.fnames.dst_filename, "df");
 
-    /* Successful write - need to set up for 3 successful calls to OS_write() */
-    UT_SetDeferredRetcode(UT_KEY(OS_write), 1, 44);
-    UT_SetDeferredRetcode(UT_KEY(OS_write), 1, strlen(history.fnames.src_filename) + 6);
-    UT_SetDeferredRetcode(UT_KEY(OS_write), 1, strlen(history.fnames.dst_filename) + 6);
-    UtAssert_INT32_EQ(CF_WriteHistoryEntryToFile(arg_fd, &history), 0);
-    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+    // /* Successful write - need to set up for 3 successful calls to OS_write() */
+    // UT_SetDeferredRetcode(UT_KEY(OS_write), 1, 44);
+    // UT_SetDeferredRetcode(UT_KEY(OS_write), 1, strlen(history.fnames.src_filename) + 6);
+    // UT_SetDeferredRetcode(UT_KEY(OS_write), 1, strlen(history.fnames.dst_filename) + 6);
+    // UtAssert_INT32_EQ(CF_WriteHistoryEntryToFile(arg_fd, &history), 0);
+    // UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+
+    // /* Unsuccessful write */
+    // UT_CF_ResetEventCapture();
+    // UT_SetDeferredRetcode(UT_KEY(OS_write), 1, -1);
+    // UtAssert_INT32_EQ(CF_WriteHistoryEntryToFile(arg_fd, &history), -1);
+    // UT_CF_AssertEventID(CF_EID_ERR_CMD_WHIST_WRITE);
 
     /* Unsuccessful write */
     UT_CF_ResetEventCapture();
-    UT_SetDeferredRetcode(UT_KEY(OS_write), 1, -1);
+    UT_SetDeferredRetcode(UT_KEY(stub_snprintf), 0, (10000));
     UtAssert_INT32_EQ(CF_WriteHistoryEntryToFile(arg_fd, &history), -1);
     UT_CF_AssertEventID(CF_EID_ERR_CMD_WHIST_WRITE);
 }

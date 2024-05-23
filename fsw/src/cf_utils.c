@@ -174,9 +174,10 @@ CFE_Status_t CF_WriteHistoryEntryToFile(osal_id_t fd, const CF_History_t *histor
     static const char *CF_DSTR[] = {"RX", "TX"}; /* conversion of CF_Direction_t to string */
 
     int          i;
-    CFE_Status_t ret;
+    CFE_Status_t Status;
     size_t       len;
     char         linebuf[(CF_FILENAME_MAX_LEN * 2) + 128]; /* buffer for line data */
+    int          snprintf_result;
 
     for (i = 0; i < 3; ++i)
     {
@@ -184,30 +185,39 @@ CFE_Status_t CF_WriteHistoryEntryToFile(osal_id_t fd, const CF_History_t *histor
         {
             case 0:
                 CF_Assert(history->dir < CF_Direction_NUM);
-                snprintf(linebuf, sizeof(linebuf), "SEQ (%lu, %lu)\tDIR: %s\tPEER %lu\tSTAT: %d\t",
+                snprintf_result = snprintf(linebuf, sizeof(linebuf), "SEQ (%lu, %lu)\tDIR: %s\tPEER %lu\tSTAT: %d\t",
                          (unsigned long)history->src_eid, (unsigned long)history->seq_num, CF_DSTR[history->dir],
                          (unsigned long)history->peer_eid, (int)history->txn_stat);
                 break;
             case 1:
-                snprintf(linebuf, sizeof(linebuf), "SRC: %s\t", history->fnames.src_filename);
+                snprintf_result = snprintf(linebuf, sizeof(linebuf), "SRC: %s\t", history->fnames.src_filename);
                 break;
             case 2:
             default:
-                snprintf(linebuf, sizeof(linebuf), "DST: %s\n", history->fnames.dst_filename);
+                snprintf_result = snprintf(linebuf, sizeof(linebuf), "DST: %s\n", history->fnames.dst_filename);
                 break;
         }
 
-        len = strlen(linebuf);
-        ret = CF_WrappedWrite(fd, linebuf, len);
-        if (ret != len)
+        if (snprintf_result >= sizeof(linebuf))
         {
             CFE_EVS_SendEvent(CF_EID_ERR_CMD_WHIST_WRITE, CFE_EVS_EventType_ERROR,
-                              "CF: writing queue file failed, expected %ld got %ld", (long)len, (long)ret);
-            return CF_ERROR;
+                              "CF: line buffer overflow, data truncated");
+            Status = CF_ERROR;
+            break;
+        }
+
+        len = strlen(linebuf);
+        Status = CF_WrappedWrite(fd, linebuf, len);
+        if (Status != len)
+        {
+            CFE_EVS_SendEvent(CF_EID_ERR_CMD_WHIST_WRITE, CFE_EVS_EventType_ERROR,
+                              "CF: writing queue file failed, expected %ld got %ld", (long)len, (long)Status);
+            Status = CF_ERROR;
+            break;
         }
     }
 
-    return CFE_SUCCESS;
+    return Status;
 }
 
 /*----------------------------------------------------------------
