@@ -327,19 +327,20 @@ CFE_Status_t CF_PrioSearch(CF_CListNode_t *node, void *context)
  *-----------------------------------------------------------------*/
 void CF_InsertSortPrio(CF_Transaction_t *t, CF_QueueIdx_t q)
 {
-    int           insert_back = 0;
-    CF_Channel_t *c           = &CF_AppData.engine.channels[t->chan_num];
+    int           insert_front = 0;
+    CF_Channel_t *c            = &CF_AppData.engine.channels[t->chan_num];
 
     CF_Assert(t->chan_num < CF_NUM_CHANNELS);
     CF_Assert(t->state != CF_TxnState_IDLE);
 
     /* look for proper position on PEND queue for this transaction.
-     * This is a simple priority sort. */
+     * This is a simple priority sort. A priority of 0 denotes the
+     * highest priority, and a priority of 255 denotes the lowest. */
 
     if (!c->qs[q])
     {
         /* list is empty, so just insert */
-        insert_back = 1;
+        insert_front = 1;
     }
     else
     {
@@ -351,13 +352,13 @@ void CF_InsertSortPrio(CF_Transaction_t *t, CF_QueueIdx_t q)
         }
         else
         {
-            insert_back = 1;
+            insert_front = 1;
         }
     }
 
-    if (insert_back)
+    if (insert_front)
     {
-        CF_CList_InsertBack_Ex(c, q, &t->cl_node);
+        CF_CList_InsertFront_Ex(c, q, &t->cl_node);
     }
     t->flags.com.q_index = q;
 }
