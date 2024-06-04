@@ -518,4 +518,21 @@ CF_TxnStatus_t CF_TxnStatus_From_ConditionCode(CF_CFDP_ConditionCode_t cc);
  */
 bool CF_TxnStatus_IsError(CF_TxnStatus_t txn_stat);
 
+/************************************************************************/
+/** @brief Calculates the length of a string up to a maximum length
+ *
+ * Purpose: Provides a local OSAL routine to get the functionality
+ *          of the (non-C99) "strnlen()" function, via the
+ *          C89/C99 standard "memchr()" function instead.
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       None
+ *
+ * @param str     Pointer to the input string
+ * @param maxlen  Maximum number of characters to check
+ *
+ * @returns Length of the string up to `maxlen` characters
+ */
+size_t CF_strnlen(const char *str, size_t maxlen);
+
 #endif /* !CF_UTILS_H */

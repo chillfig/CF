@@ -41,7 +41,7 @@ void UT_DefaultHandler_CF_WriteTxnQueueDataToFile(void *, UT_EntryKey_t, const U
  * Generated stub function for CF_FindTransactionBySequenceNumber()
  * ----------------------------------------------------
  */
-CF_Transaction_t *CF_FindTransactionBySequenceNumber(CF_Channel_t       *chan,
+CF_Transaction_t *CF_FindTransactionBySequenceNumber(CF_Channel_t *      chan,
                                                      CF_TransactionSeq_t transaction_sequence_number,
                                                      CF_EntityId_t       src_eid)
 {
@@ -415,4 +415,21 @@ CFE_Status_t CF_WriteTxnQueueDataToFile(osal_id_t fd, CF_Channel_t *chan, CF_Que
     UT_GenStub_Execute(CF_WriteTxnQueueDataToFile, Basic, UT_DefaultHandler_CF_WriteTxnQueueDataToFile);
 
     return UT_GenStub_GetReturnValue(CF_WriteTxnQueueDataToFile, CFE_Status_t);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for CF_strnlen()
+ * ----------------------------------------------------
+ */
+size_t CF_strnlen(const char *str, size_t maxlen)
+{
+    UT_GenStub_SetupReturnBuffer(CF_strnlen, size_t);
+
+    UT_GenStub_AddParam(CF_strnlen, const char *, str);
+    UT_GenStub_AddParam(CF_strnlen, size_t, maxlen);
+
+    UT_GenStub_Execute(CF_strnlen, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CF_strnlen, size_t);
 }

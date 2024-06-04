@@ -196,8 +196,7 @@ CFE_Status_t CF_WriteHistoryEntryToFile(osal_id_t fd, const CF_History_t *histor
                 snprintf(linebuf, sizeof(linebuf), "DST: %s\n", history->fnames.dst_filename);
                 break;
         }
-
-        len = strlen(linebuf);
+        len = CF_strnlen(linebuf, (CF_FILENAME_MAX_LEN * 2) + 128);
         ret = CF_WrappedWrite(fd, linebuf, len);
         if (ret != len)
         {
@@ -587,4 +586,23 @@ CF_TxnStatus_t CF_TxnStatus_From_ConditionCode(CF_CFDP_ConditionCode_t cc)
 {
     /* All CFDP CC values directly correspond to a Transaction Status of the same numeric value */
     return (CF_TxnStatus_t)cc;
+}
+
+/*----------------------------------------------------------------
+ *
+ * Function: CF_strnlen
+ *
+ * Application-scope internal function
+ * See description in cf_utils.h for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
+size_t CF_strnlen(const char *str, size_t maxlen)
+{
+    const char *end = memchr(str, 0, maxlen);
+    if (end != NULL)
+    {
+        /* actual length of string is difference */
+        maxlen = end - str;
+    }
+    return maxlen;
 }
