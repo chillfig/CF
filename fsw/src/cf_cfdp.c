@@ -301,22 +301,6 @@ CF_Logical_PduBuffer_t *CF_CFDP_ConstructPduHeader(const CF_Transaction_t *txn, 
 
 /*----------------------------------------------------------------
  *
- * Internal helper routine only, not part of API.
- *
- *-----------------------------------------------------------------*/
-static inline size_t CF_strnlen(const char *str, size_t maxlen)
-{
-    const char *end = memchr(str, 0, maxlen);
-    if (end != NULL)
-    {
-        /* actual length of string is difference */
-        maxlen = end - str;
-    }
-    return maxlen;
-}
-
-/*----------------------------------------------------------------
- *
  * Application-scope internal function
  * See description in cf_cfdp.h for argument/return detail
  *

@@ -1144,6 +1144,42 @@ void Test_CF_TxnStatus_From_ConditionCode(void)
 
 /*******************************************************************************
 **
+**  CF_strnlen tests
+**
+*******************************************************************************/
+void Test_CF_strnlen_null_character_found(void)
+{
+    /* Arrange */
+    size_t result;
+    char   str[CF_FILENAME_MAX_LEN];
+
+    memset(str, 0xFF, sizeof(str) - 1);
+    str[CF_FILENAME_MAX_LEN - 1] = '\0';
+
+    /* Act */
+    result = CF_strnlen(str, sizeof(str));
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, sizeof(str) - 1);
+}
+
+void Test_CF_strnlen_null_character_not_found(void)
+{
+    /* Arrange */
+    size_t result;
+    char   str[CF_FILENAME_MAX_LEN];
+
+    memset(str, 0xFF, sizeof(str));
+
+    /* Act */
+    result = CF_strnlen(str, sizeof(str));
+
+    /* Assert */
+    UtAssert_INT32_EQ(result, sizeof(str));
+}
+
+/*******************************************************************************
+**
 **  cf_utils_tests UtTest_Add groups
 **
 *******************************************************************************/
@@ -1291,6 +1327,13 @@ void add_CF_WrappedLseek_tests(void)
                cf_utils_tests_Teardown, "Test_CF_WrappedLseek_Call_OS_lseek_WithGivenArgumentsAndReturnItsReturnValue");
 }
 
+void add_CF_strnlen_tests(void)
+{
+    UtTest_Add(Test_CF_strnlen_null_character_found, cf_utils_tests_Setup, cf_utils_tests_Teardown,
+               "Test_CF_strnlen_null_character_found");
+    UtTest_Add(Test_CF_strnlen_null_character_not_found, cf_utils_tests_Setup, cf_utils_tests_Teardown,
+               "Test_CF_strnlen_null_character_not_found");
+}
 /*******************************************************************************
 **
 **  cf_utils_tests UtTest_Setup
@@ -1330,4 +1373,6 @@ void UtTest_Setup(void)
     add_CF_WrappedWrite_tests();
 
     add_CF_WrappedLseek_tests();
+
+    add_CF_strnlen_tests();
 }
