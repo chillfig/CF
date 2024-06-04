@@ -80,6 +80,21 @@ typedef struct CF_ChanAction_BoolMsgArg
     bool                     barg;
 } CF_ChanAction_BoolMsgArg_t;
 
+/**
+ * @brief An object to use with channel-scope actions for open/close UDP channel
+ *
+ * This combines a boolean action arg with an output that indicates if the
+ * action was successful, and if not, why it failed.
+ */
+typedef struct CF_ChanAction_OpenCloseArg
+{
+    int  count;     /**< out param -- indicates how many channels are affected */
+    int  same;      /**< out param -- indicates at least one action was set to its current value */
+    int  type_fail; /**< out param -- indicates at least one channel was not a UDP channel */
+    int  init_fail; /**< out param -- indicates at least one socket initialization failed */
+    bool action;
+} CF_ChanAction_OpenCloseArg_t;
+
 /************************************************************************/
 /** @brief The no-operation command.
  *
@@ -563,6 +578,52 @@ void CF_CmdDisableEngine(CFE_SB_Buffer_t *msg);
  * @param msg   Pointer to command message
  */
 void CF_CmdSwitchIP(CFE_SB_Buffer_t *msg);
+
+/************************************************************************/
+/** @brief Do the actual opening or closing of a socket for a specific UDP channel.
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       context must not be NULL.
+ *
+ * @param chan_num  Channel number to operate on
+ * @param context   Pointer to CF_ChanAction_OpenCloseArg_t structure from initial call
+ */
+void CF_DoOpenClose_Chan(uint8 chan_num, CF_ChanAction_OpenCloseArg_t *context);
+
+/************************************************************************/
+/** @brief Handle transaction open and close commands.
+ *
+ * @par Description
+ *       This is called for both open and close ground commands.
+ *       It uses the CF_DoChanAction() function to perform the command.
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       cmd must not be NULL.
+ *
+ * @param cmd       Pointer to the command message
+ * @param action    Action to take (open or close)
+ */
+void CF_DoOpenClose(CF_UnionArgsCmd_t *cmd, uint8 action);
+
+/************************************************************************/
+/** @brief Ground command open a UDP channel.
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       msg must not be NULL.
+ *
+ * @param msg   Pointer to command message
+ */
+void CF_CmdOpenUDPChannel(CFE_SB_Buffer_t *msg);
+
+/************************************************************************/
+/** @brief Ground command close a UDP channel.
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       msg must not be NULL.
+ *
+ * @param msg   Pointer to command message
+ */
+void CF_CmdCloseUDPChannel(CFE_SB_Buffer_t *msg);
 
 /************************************************************************/
 /** @brief Process any ground command contained in the given message.

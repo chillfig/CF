@@ -3965,6 +3965,429 @@ void Test_CF_CmdSwitchIP_NominalDiffHost(void)
 
 /*******************************************************************************
 **
+**  CF_DoOpenClose_Chan tests
+**
+*******************************************************************************/
+
+void Test_CF_DoOpenClose_Chan_Nominal_Close(void)
+{
+    /* Arrange */
+    uint8                               arg_chan_num = Any_cf_channel();
+    CF_ChanAction_OpenCloseArg_t        context = {0};
+    CF_ConfigTable_t                    config_table = {0};
+
+    CF_AppData.config_table = &config_table;
+
+    /* set action to close channel */
+    context.action = 1;
+
+    /* set channel to be an open UDP channel */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = 0;
+    config_table.chan[arg_chan_num].connection_type = CF_UDP_CHANNEL;
+
+    /* Act */
+    CF_DoOpenClose_Chan(arg_chan_num, &context);
+
+    /* Assert */
+    UtAssert_True(CF_AppData.hk.channel_hk[arg_chan_num].channel_closed == context.action,
+                  "CF_DoOpenClose_Chan - Nominal_Close: set channel_closed flag to 1");
+    UtAssert_STUB_COUNT(CF_UDP_CleanupConnection, 1);
+    UtAssert_UINT32_EQ(context.count, 1);
+    UtAssert_UINT32_EQ(context.same, 0);
+    UtAssert_UINT32_EQ(context.type_fail, 0);
+    UtAssert_UINT32_EQ(context.init_fail, 0);
+}
+
+void Test_CF_DoOpenClose_Chan_Nominal_Open(void)
+{
+    /* Arrange */
+    uint8                               arg_chan_num = Any_cf_channel();
+    CF_ChanAction_OpenCloseArg_t        context = {0};
+    CF_ConfigTable_t                    config_table = {0};
+
+    CF_AppData.config_table = &config_table;
+
+    /* set action to open channel */
+    context.action = 0;
+    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CFE_SUCCESS);
+
+    /* set channel to be a closed UDP channel */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = 1;
+    config_table.chan[arg_chan_num].connection_type = CF_UDP_CHANNEL;
+
+    /* Act */
+    CF_DoOpenClose_Chan(arg_chan_num, &context);
+
+    /* Assert */
+    UtAssert_True(CF_AppData.hk.channel_hk[arg_chan_num].channel_closed == context.action,
+                  "CF_DoOpenClose_Chan - Nominal_Open: set channel_closed flag to 0");
+    UtAssert_STUB_COUNT(CF_UDP_InitConnection, 1);
+    UtAssert_UINT32_EQ(context.count, 1);
+    UtAssert_UINT32_EQ(context.same, 0);
+    UtAssert_UINT32_EQ(context.type_fail, 0);
+    UtAssert_UINT32_EQ(context.init_fail, 0);
+}
+
+void Test_CF_DoOpenClose_Chan_Open_InitFail(void)
+{
+    /* Arrange */
+    uint8                               arg_chan_num = Any_cf_channel();
+    CF_ChanAction_OpenCloseArg_t        context = {0};
+    CF_ConfigTable_t                    config_table = {0};
+
+    CF_AppData.config_table = &config_table;
+
+    /* set action to open channel */
+    context.action = 0;
+    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CF_NULL_POINTER_ERR);
+
+    /* set channel to be a closed UDP channel */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = 1;
+    config_table.chan[arg_chan_num].connection_type = CF_UDP_CHANNEL;
+
+    /* Act */
+    CF_DoOpenClose_Chan(arg_chan_num, &context);
+
+    /* Assert */
+    UtAssert_True(CF_AppData.hk.channel_hk[arg_chan_num].channel_closed == 1,
+                  "CF_DoOpenClose_Chan - Open_InitFail: channel remains closed");
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_ERR_INIT_UDP);
+    UtAssert_UINT32_EQ(context.count, 1);
+    UtAssert_UINT32_EQ(context.same, 0);
+    UtAssert_UINT32_EQ(context.type_fail, 0);
+    UtAssert_UINT32_EQ(context.init_fail, 1);
+}
+
+void Test_CF_DoOpenClose_Chan_TypeFail(void)
+{
+    /* Arrange */
+    uint8                               arg_chan_num = Any_cf_channel();
+    CF_ChanAction_OpenCloseArg_t        context = {0};
+    CF_ConfigTable_t                    config_table = {0};
+
+    CF_AppData.config_table = &config_table;
+
+    /* set action to close channel */
+    context.action = 1;
+
+    /* set channel to be an open SB channel */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = 0;
+    config_table.chan[arg_chan_num].connection_type = CF_SB_CHANNEL;
+
+    /* Act */
+    CF_DoOpenClose_Chan(arg_chan_num, &context);
+
+    /* Assert */
+    UtAssert_True(CF_AppData.hk.channel_hk[arg_chan_num].channel_closed == 0,
+                  "CF_DoOpenClose_Chan - TypeFail: channel remains open");
+    UtAssert_UINT32_EQ(context.count, 1);
+    UtAssert_UINT32_EQ(context.same, 0);
+    UtAssert_UINT32_EQ(context.type_fail, 1);
+    UtAssert_UINT32_EQ(context.init_fail, 0);
+}
+
+void Test_CF_DoOpenClose_Chan_Same(void)
+{
+    /* Arrange */
+    uint8                               arg_chan_num = Any_cf_channel();
+    CF_ChanAction_OpenCloseArg_t        context = {0};
+    CF_ConfigTable_t                    config_table = {0};
+
+    CF_AppData.config_table = &config_table;
+
+    /* set action to an arbitrary channel state */
+    context.action = Any_bool_arg_t_barg();
+
+    /* set channel to be a UDP channel with the same state as the current open/closed state */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = context.action;
+    config_table.chan[arg_chan_num].connection_type = CF_UDP_CHANNEL;
+
+    /* Act */
+    CF_DoOpenClose_Chan(arg_chan_num, &context);
+
+    /* Assert */
+    UtAssert_True(CF_AppData.hk.channel_hk[arg_chan_num].channel_closed == context.action,
+                  "CF_DoOpenClose_Chan - TypeFail: channel_closed already set to %d", context.action);
+    UtAssert_UINT32_EQ(context.count, 1);
+    UtAssert_UINT32_EQ(context.same, 1);
+    UtAssert_UINT32_EQ(context.type_fail, 0);
+    UtAssert_UINT32_EQ(context.init_fail, 0);
+}
+
+/*******************************************************************************
+**
+**  CF_DoOpenClose tests
+**
+*******************************************************************************/
+
+void Test_CF_DoOpenClose_InvalidChannel(void)
+{
+    /* Arrange */
+    CF_UnionArgsCmd_t uabuf = {};
+    CF_ConfigTable_t  config_table = {0};
+
+    memset(&uabuf, 0, sizeof(uabuf));
+    CF_AppData.config_table = &config_table;
+
+    /* Set to invalid channel */
+    uabuf.data.byte[0] = CF_NUM_CHANNELS;
+
+    /* Act - Open */
+    CF_DoOpenClose(&uabuf, 0);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_ERR_CMD_CHAN_PARAM);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 1);
+}
+
+void Test_CF_DoOpenClose_InitFail(void)
+{
+    /* Arrange */
+    CF_UnionArgsCmd_t uabuf = {};
+    uint8             arg_chan_num = Any_cf_channel();
+    CF_ConfigTable_t  config_table = {0};
+
+    memset(&uabuf, 0, sizeof(uabuf));
+    CF_AppData.config_table = &config_table;
+
+    /* Set to arg_chan_num */
+    uabuf.data.byte[0] = arg_chan_num;
+
+    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CF_NULL_POINTER_ERR);
+
+    /* set channel to be a closed UDP channel */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = 1;
+    config_table.chan[arg_chan_num].connection_type = CF_UDP_CHANNEL;
+
+    /* Act - Open */
+    CF_DoOpenClose(&uabuf, 0);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_ERR_INIT_UDP);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 1);
+}
+
+void Test_CF_DoOpenClose_TypeFail(void)
+{
+    /* Arrange */
+    CF_UnionArgsCmd_t uabuf = {};
+    uint8             arg_chan_num = Any_cf_channel();
+    CF_ConfigTable_t  config_table = {0};
+
+    memset(&uabuf, 0, sizeof(uabuf));
+    CF_AppData.config_table = &config_table;
+
+    /* Set to arg_chan_num */
+    uabuf.data.byte[0] = arg_chan_num;
+
+    /* set channel to be a closed SB channel */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = 1;
+    config_table.chan[arg_chan_num].connection_type = CF_SB_CHANNEL;
+
+    /* Act - Open */
+    CF_DoOpenClose(&uabuf, 0);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_ERR_CMD_CONN_TYPE);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 1);
+}
+
+void Test_CF_DoOpenClose_Same(void)
+{
+    /* Arrange */
+    CF_UnionArgsCmd_t uabuf = {};
+    uint8             arg_chan_num = Any_cf_channel();
+    CF_ConfigTable_t  config_table = {0};
+
+    memset(&uabuf, 0, sizeof(uabuf));
+    CF_AppData.config_table = &config_table;
+
+    /* Set to arg_chan_num */
+    uabuf.data.byte[0] = arg_chan_num;
+
+    /* set channel to be UDP and closed */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = 1;
+    config_table.chan[arg_chan_num].connection_type = CF_UDP_CHANNEL;
+
+    /* Act - Close */
+    CF_DoOpenClose(&uabuf, 1);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_INF_CMD_OPENCLOSE);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, 1);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 0);
+}
+
+void Test_CF_DoOpenClose_Nominal(void)
+{
+    /* Arrange */
+    CF_UnionArgsCmd_t uabuf = {};
+    uint8             arg_chan_num = Any_cf_channel();
+    CF_ConfigTable_t  config_table = {0};
+
+    memset(&uabuf, 0, sizeof(uabuf));
+    CF_AppData.config_table = &config_table;
+
+    /* Set to CF_ALL_CHANNELS */
+    uabuf.data.byte[0] = arg_chan_num;
+
+    /* set channel to be an open UDP channel */
+    CF_AppData.hk.channel_hk[arg_chan_num].channel_closed = 0;
+    config_table.chan[arg_chan_num].connection_type = CF_UDP_CHANNEL;
+
+    /* Act - Close */
+    CF_DoOpenClose(&uabuf, 1);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_INF_CMD_OPENCLOSE);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, 1);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 0);
+}
+
+void Test_CF_DoOpenClose_MultiChannelNominal(void)
+{
+    /* Arrange */
+    CF_UnionArgsCmd_t uabuf = {};
+    CF_ConfigTable_t  config_table = {0};
+
+    memset(&uabuf, 0, sizeof(uabuf));
+    CF_AppData.config_table = &config_table;
+
+    /* Set to CF_ALL_CHANNELS */
+    uabuf.data.byte[0] = CF_ALL_CHANNELS;
+
+    /* Channel 0 - set channel to be closed and type to UDP */
+    CF_AppData.hk.channel_hk[0].channel_closed = 1;
+    config_table.chan[0].connection_type = CF_UDP_CHANNEL;
+    /* Channel 1 - set channel to be open and type to SB */
+    CF_AppData.hk.channel_hk[1].channel_closed = 0;
+    config_table.chan[1].connection_type = CF_SB_CHANNEL;
+    /* Channel 3 - set channel to be open and type to UDP */
+    CF_AppData.hk.channel_hk[2].channel_closed = 0;
+    config_table.chan[2].connection_type = CF_UDP_CHANNEL;
+
+    /* Act - Close */
+    CF_DoOpenClose(&uabuf, 1);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_INF_CMD_OPENCLOSE);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.cmd, 1);
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 0);
+}
+
+void Test_CF_DoOpenClose_MultiChannelInitFail(void)
+{
+    /* Arrange */
+    CF_UnionArgsCmd_t uabuf = {};
+    CF_ConfigTable_t  config_table = {0};
+
+    memset(&uabuf, 0, sizeof(uabuf));
+    CF_AppData.config_table = &config_table;
+
+    /* Set to CF_ALL_CHANNELS */
+    uabuf.data.byte[0] = CF_ALL_CHANNELS;
+
+    UT_SetDefaultReturnValue(UT_KEY(CF_UDP_InitConnection), CF_NULL_POINTER_ERR);
+
+    /* Channel 0 - set channel to be closed and type to UDP */
+    CF_AppData.hk.channel_hk[0].channel_closed = 1;
+    config_table.chan[0].connection_type = CF_UDP_CHANNEL;
+    /* Channel 1 - set channel to be closed and type to SB */
+    CF_AppData.hk.channel_hk[1].channel_closed = 1;
+    config_table.chan[1].connection_type = CF_SB_CHANNEL;
+    /* Channel 3 - set channel to be open and type to UDP */
+    CF_AppData.hk.channel_hk[2].channel_closed = 1;
+    config_table.chan[2].connection_type = CF_UDP_CHANNEL;
+
+    /* Act - Open */
+    CF_DoOpenClose(&uabuf, 0);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_ERR_INIT_UDP);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[1], CF_EID_ERR_INIT_UDP);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 1);
+}
+
+/*******************************************************************************
+**
+**  CF_CmdOpenUDPChannel tests
+**
+*******************************************************************************/
+
+/* Test_CF_CmdOpenUDPChannel_Call_CF_DoOpenClose_WithGiven_msg_And_action_0 */
+void Test_CF_CmdOpenUDPChannel_Call_CF_DoOpenClose_WithGiven_msg_And_action_0(void)
+{
+    /* Arrange */
+    CF_UT_cmd_unionargs_buf_t utbuf;
+
+    memset(&utbuf, 0, sizeof(utbuf));
+
+    /* Set to invalid channel */
+    utbuf.ua.data.byte[0] = CF_NUM_CHANNELS;
+
+    /* Act */
+    CF_CmdOpenUDPChannel(&utbuf.buf);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_ERR_CMD_CHAN_PARAM);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 1);
+}
+
+/*******************************************************************************
+**
+**  CF_CmdCloseUDPChannel tests
+**
+*******************************************************************************/
+
+/* Test_CF_CmdCloseUDPChannel_Call_CF_DoOpenClose_WithGiven_msg_And_action_1 */
+void Test_CF_CmdCloseUDPChannel_Call_CF_DoOpenClose_WithGiven_msg_And_action_1(void)
+{
+    /* Arrange */
+    CF_UT_cmd_unionargs_buf_t utbuf;
+
+    memset(&utbuf, 0, sizeof(utbuf));
+
+    /* Set to invalid channel */
+    utbuf.ua.data.byte[0] = CF_NUM_CHANNELS;
+
+    /* Act */
+    CF_CmdCloseUDPChannel(&utbuf.buf);
+
+    /* Assert */
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_UINT32_EQ(UT_CF_CapturedEventIDs[0], CF_EID_ERR_CMD_CHAN_PARAM);
+
+    /* Assert incremented counter */
+    UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 1);
+}
+
+/*******************************************************************************
+**
 **  CF_ProcessGroundCommand tests
 **
 *******************************************************************************/
@@ -4507,6 +4930,50 @@ void add_CF_CmdSwitchIP_tests(void)
                cf_cmd_tests_Teardown, "Test_CF_CmdSwitchIP_NominalDiffHost");
 }
 
+void add_CF_DoOpenClose_Chan_tests(void)
+{
+    UtTest_Add(Test_CF_DoOpenClose_Chan_Nominal_Close, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_Chan_Nominal_Close");
+    UtTest_Add(Test_CF_DoOpenClose_Chan_Nominal_Open, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_Chan_Nominal_Open");
+    UtTest_Add(Test_CF_DoOpenClose_Chan_Open_InitFail, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_Chan_Open_InitFail");
+    UtTest_Add(Test_CF_DoOpenClose_Chan_TypeFail, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_Chan_TypeFail");
+    UtTest_Add(Test_CF_DoOpenClose_Chan_Same, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_Chan_Same");
+}
+
+void add_CF_DoOpenClose_tests(void)
+{
+    UtTest_Add(Test_CF_DoOpenClose_InvalidChannel, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_InvalidChannel");
+    UtTest_Add(Test_CF_DoOpenClose_InitFail, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_InitFail");
+    UtTest_Add(Test_CF_DoOpenClose_TypeFail, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_TypeFail");
+    UtTest_Add(Test_CF_DoOpenClose_Same, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_Same");
+    UtTest_Add(Test_CF_DoOpenClose_Nominal, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_Nominal");
+    UtTest_Add(Test_CF_DoOpenClose_MultiChannelNominal, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_MultiChannelNominal");
+    UtTest_Add(Test_CF_DoOpenClose_MultiChannelInitFail, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_DoOpenClose_MultiChannelInitFail");
+}
+
+void add_CF_CmdOpenUDPChannel_tests(void)
+{
+    UtTest_Add(Test_CF_CmdOpenUDPChannel_Call_CF_DoOpenClose_WithGiven_msg_And_action_0, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_CmdOpenUDPChannel_Call_CF_DoOpenClose_WithGiven_msg_And_action_0");
+}
+
+void add_CF_CmdCloseUDPChannel_tests(void)
+{
+    UtTest_Add(Test_CF_CmdCloseUDPChannel_Call_CF_DoOpenClose_WithGiven_msg_And_action_1, cf_cmd_tests_Setup,
+               cf_cmd_tests_Teardown, "Test_CF_CmdCloseUDPChannel_Call_CF_DoOpenClose_WithGiven_msg_And_action_1");
+}
+
 void add_CF_ProcessGroundCommand_tests(void)
 {
     UtTest_Add(Test_CF_ProcessGroundCommand_When_cmd_EqTo_CF_NUM_COMMANDS_FailAndSendEvent, cf_cmd_tests_Setup,
@@ -4608,6 +5075,14 @@ void UtTest_Setup(void)
     add_CF_CmdDisableEngine_tests();
 
     add_CF_CmdSwitchIP_tests();
+
+    add_CF_DoOpenClose_Chan_tests();
+
+    add_CF_DoOpenClose_tests();
+
+    add_CF_CmdOpenUDPChannel_tests();
+
+    add_CF_CmdCloseUDPChannel_tests();
 
     add_CF_ProcessGroundCommand_tests();
 }

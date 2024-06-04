@@ -74,7 +74,7 @@ void Test_CF_UDP_InitConnection(void)
     /* Execute test */
     retcode = CF_UDP_InitConnection(NULL, &Channel);
     /* Verify outputs */
-    UtAssert_True(retcode == CF_NULL_POINTER_ERR, "CF_UDP_InitConnection - 2/5: NULL pointer check");
+    UtAssert_True(retcode == OS_INVALID_POINTER, "CF_UDP_InitConnection - 2/5: NULL pointer check");
 
     /* ----- Test case #3 - pChannel NULL ----- */
     /* Setup */
@@ -82,16 +82,16 @@ void Test_CF_UDP_InitConnection(void)
     /* Execute test */
     retcode = CF_UDP_InitConnection(&pUdpConnData, NULL);
     /* Verify outputs */
-    UtAssert_True(retcode == CF_NULL_POINTER_ERR, "CF_UDP_InitConnection - 3/5: NULL pointer check 2");
+    UtAssert_True(retcode == OS_INVALID_POINTER, "CF_UDP_InitConnection - 3/5: NULL pointer check 2");
 
     /* ----- Test case #4 - Socket Open Error ----- */
     /* Setup */
     UT_ResetState(0);
-    UT_SetDeferredRetcode(UT_KEY(OS_SocketOpen), 1, OS_ERROR);
+    UT_SetDeferredRetcode(UT_KEY(OS_SocketOpen), 1, OS_ERR_NAME_TAKEN);
     /* Execute test */
     retcode = CF_UDP_InitConnection(&pUdpConnData, &Channel);
     /* Verify outputs */
-    UtAssert_True(retcode == CF_SOCKET_OPEN_ERR, "CF_UDP_InitConnection - 4/5: Socket Open Error");
+    UtAssert_True(retcode == OS_ERR_NAME_TAKEN, "CF_UDP_InitConnection - 4/5: Socket Open Error");
 
     /* ----- Test case #5 - Socket Bind Error ----- */
     /* Setup */
@@ -102,11 +102,11 @@ void Test_CF_UDP_InitConnection(void)
     UT_SetHandlerFunction(UT_KEY(OS_SocketOpen), UT_UpdatedDefaultHandler_OS_SocketOpen, NULL);
     UT_SetDataBuffer(UT_KEY(OS_SocketOpen), &SockId, sizeof(SockId), true);
     UT_SetHandlerFunction(UT_KEY(OS_close), UT_UpdatedDefaultHandler_OS_close, NULL);
-    UT_SetDeferredRetcode(UT_KEY(OS_SocketBind), 1, OS_ERROR);
+    UT_SetDeferredRetcode(UT_KEY(OS_SocketBind), 1, OS_ERR_BAD_ADDRESS);
     /* Execute test */
     retcode = CF_UDP_InitConnection(&pUdpConnData, &Channel);
     /* Verify outputs */
-    UtAssert_True(retcode == CF_SOCKET_BIND_ERR, "CF_UDP_InitConnection - 5/5: Socket Bind Error");
+    UtAssert_True(retcode == OS_ERR_BAD_ADDRESS, "CF_UDP_InitConnection - 5/5: Socket Bind Error");
     UtAssert_True(OS_ObjectIdEqual(Channel.conn_id.sock_id, OS_OBJECT_ID_UNDEFINED), "CF_UDP_InitConnection - 5/5: Socket Bind Error");
     UtAssert_True(UT_GetStubCount(UT_KEY(OS_SocketOpen)) == 1, "CF_UDP_InitConnection - 5/5: Socket Bind Error");
     UtAssert_True(UT_GetStubCount(UT_KEY(OS_close)) == 1, "CF_UDP_InitConnection - 5/5: Socket Bind Error");

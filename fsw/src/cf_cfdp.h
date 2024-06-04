@@ -127,8 +127,7 @@ void CF_CFDP_SendEotPkt(CF_Transaction_t *t);
  *       Only called once.
  *
  * @retval #CFE_SUCCESS \copydoc CFE_SUCCESS
- * @returns anything else on error.
- *
+ * @returns CF_ERROR if all channels fail initialization.
  */
 CFE_Status_t CF_CFDP_InitEngine(void);
 

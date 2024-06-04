@@ -46,9 +46,8 @@
  * \param[in] chan_ptr Pointer to CF_Channel_t
  * 
  * \retval CFE_SUCCESS on successful initialization
- * \retval CF_NULL_POINTER_ERR on null pointer argument
- * \retval CF_SOCKET_OPEN_ERR on socket open failure
- * \retval CF_SOCKET_BIND_ERR on socket bind failure
+ * \retval OS_INVALID_POINTER on null pointer argument
+ * \return Execution status (see \ref OSReturnCodes) on OS_SocketOpen or OS_SocketBind failure
  */
 int32 CF_UDP_InitConnection(CF_UDP_ConnectionData_t *udp_conn_data_ptr, CF_Channel_t *chan_ptr);
 

@@ -80,6 +80,18 @@ void CF_CmdCancel_Txn(CF_Transaction_t *t, void *ignored)
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for CF_CmdCloseUDPChannel()
+ * ----------------------------------------------------
+ */
+void CF_CmdCloseUDPChannel(CFE_SB_Buffer_t *msg)
+{
+    UT_GenStub_AddParam(CF_CmdCloseUDPChannel, CFE_SB_Buffer_t *, msg);
+
+    UT_GenStub_Execute(CF_CmdCloseUDPChannel, Basic, NULL);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for CF_CmdDisableDequeue()
  * ----------------------------------------------------
  */
@@ -203,6 +215,18 @@ void CF_CmdNoop(CFE_SB_Buffer_t *msg)
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for CF_CmdOpenUDPChannel()
+ * ----------------------------------------------------
+ */
+void CF_CmdOpenUDPChannel(CFE_SB_Buffer_t *msg)
+{
+    UT_GenStub_AddParam(CF_CmdOpenUDPChannel, CFE_SB_Buffer_t *, msg);
+
+    UT_GenStub_Execute(CF_CmdOpenUDPChannel, Basic, NULL);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for CF_CmdPlaybackDir()
  * ----------------------------------------------------
  */
@@ -271,6 +295,18 @@ void CF_CmdSuspend(CFE_SB_Buffer_t *msg)
     UT_GenStub_AddParam(CF_CmdSuspend, CFE_SB_Buffer_t *, msg);
 
     UT_GenStub_Execute(CF_CmdSuspend, Basic, NULL);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for CF_CmdSwitchIP()
+ * ----------------------------------------------------
+ */
+void CF_CmdSwitchIP(CFE_SB_Buffer_t *msg)
+{
+    UT_GenStub_AddParam(CF_CmdSwitchIP, CFE_SB_Buffer_t *, msg);
+
+    UT_GenStub_Execute(CF_CmdSwitchIP, Basic, NULL);
 }
 
 /*
@@ -411,6 +447,32 @@ CFE_Status_t CF_DoFreezeThaw(uint8 chan_num, const CF_ChanAction_BoolArg_t *cont
     UT_GenStub_Execute(CF_DoFreezeThaw, Basic, NULL);
 
     return UT_GenStub_GetReturnValue(CF_DoFreezeThaw, CFE_Status_t);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for CF_DoOpenClose()
+ * ----------------------------------------------------
+ */
+void CF_DoOpenClose(CF_UnionArgsCmd_t *cmd, uint8 action)
+{
+    UT_GenStub_AddParam(CF_DoOpenClose, CF_UnionArgsCmd_t *, cmd);
+    UT_GenStub_AddParam(CF_DoOpenClose, uint8, action);
+
+    UT_GenStub_Execute(CF_DoOpenClose, Basic, NULL);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for CF_DoOpenClose_Chan()
+ * ----------------------------------------------------
+ */
+void CF_DoOpenClose_Chan(uint8 chan_num, CF_ChanAction_OpenCloseArg_t *context)
+{
+    UT_GenStub_AddParam(CF_DoOpenClose_Chan, uint8, chan_num);
+    UT_GenStub_AddParam(CF_DoOpenClose_Chan, CF_ChanAction_OpenCloseArg_t *, context);
+
+    UT_GenStub_Execute(CF_DoOpenClose_Chan, Basic, NULL);
 }
 
 /*

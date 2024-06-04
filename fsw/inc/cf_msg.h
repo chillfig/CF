@@ -114,7 +114,9 @@ typedef struct CF_HkChannel_Data
     uint8           poll_counter;            /**< \brief Number of active polling directories */
     uint8           playback_counter;        /**< \brief Number of active playback directories */
     uint8           frozen;                  /**< \brief Frozen state: 0 == not frozen, else frozen */
-    uint8           spare[7];                /**< \brief Alignment spare (uint64 values in the counters) */
+    uint8           channel_closed;          /**< \brief Channel state: 0 == open, else closed
+                                                         Non-UDP channels are always considered open */
+    uint8           spare[6];                /**< \brief Alignment spare (uint64 values in the counters) */
 } CF_HkChannel_Data_t;
 
 /**
@@ -882,8 +884,76 @@ typedef enum
      */
     CF_SWITCH_IP_CC = 24,
 
+    /**
+     * \brief Open a UDP channel
+     *
+     *  \par Description
+     *       Initialize the UDP socket of a UDP channel and update the channel_closed flag.
+     *
+     *  \par Command Structure
+     *       #CF_UnionArgsCmd_t where byte[0] specifies the channel number or all channels
+     *       - 255 = all channels
+     *       - else = single channel
+     *
+     *  \par Command Verification
+     *       Successful execution of this command may be verified with
+     *       the following telemetry:
+     *       - #CF_HkPacket_t.counters #CF_HkCmdCounters_t.cmd will increment
+     *       - #CF_EID_INF_CMD_OPENCLOSE
+     *
+     *  \par Error Conditions
+     *       This command may fail for the following reason(s):
+     *       - Command packet length not as expected, #CF_EID_ERR_CMD_GCMD_LEN
+     *       - Invalid channel number, #CF_EID_ERR_CMD_CHAN_PARAM
+     *       - UDP initialization failed, #CF_EID_ERR_INIT_UDP
+     *       - Invalid connection type for a single channel, #CF_EID_ERR_CMD_CONN_TYPE
+     *
+     *  \par Evidence of failure may be found in the following telemetry:
+     *       - #CF_HkPacket_t.counters #CF_HkCmdCounters_t.err will increment
+     *
+     *  \par Criticality
+     *       None
+     *
+     *  \sa #CF_OPEN_UDP_CHANNEL_CC
+     */
+    CF_OPEN_UDP_CHANNEL_CC = 25,
+
+    /**
+     * \brief Close a UDP channel
+     *
+     *  \par Description
+     *       Cleanup the UDP socket of a UDP channel and update the channel_closed flag.
+     *
+     *  \par Command Structure
+     *       #CF_UnionArgsCmd_t where byte[0] specifies the channel number or all channels
+     *       - 255 = all channels
+     *       - else = single channel
+     *
+     *  \par Command Verification
+     *       Successful execution of this command may be verified with
+     *       the following telemetry:
+     *       - #CF_HkPacket_t.counters #CF_HkCmdCounters_t.cmd will increment
+     *       - #CF_EID_INF_CMD_OPENCLOSE
+     *
+     *  \par Error Conditions
+     *       This command may fail for the following reason(s):
+     *       - Command packet length not as expected, #CF_EID_ERR_CMD_GCMD_LEN
+     *       - Invalid channel number, #CF_EID_ERR_CMD_CHAN_PARAM
+     *       - UDP initialization failed, #CF_EID_ERR_INIT_UDP
+     *       - Invalid connection type for a single channel, #CF_EID_ERR_CMD_CONN_TYPE
+     *
+     *  \par Evidence of failure may be found in the following telemetry:
+     *       - #CF_HkPacket_t.counters #CF_HkCmdCounters_t.err will increment
+     *
+     *  \par Criticality
+     *       None
+     *
+     *  \sa #CF_CLOSE_UDP_CHANNEL_CC
+     */
+    CF_CLOSE_UDP_CHANNEL_CC = 26,
+
     /** \brief Command code limit used for validity check and array sizing */
-    CF_NUM_COMMANDS = 25,
+    CF_NUM_COMMANDS = 27,
 } CF_CMDS;
 
 /**\}*/

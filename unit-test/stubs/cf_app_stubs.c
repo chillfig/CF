@@ -117,6 +117,22 @@ CFE_Status_t CF_ValidateConfigTable(void *tbl_ptr)
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for CF_ValidateIPTable()
+ * ----------------------------------------------------
+ */
+CFE_Status_t CF_ValidateIPTable(void *tbl_ptr)
+{
+    UT_GenStub_SetupReturnBuffer(CF_ValidateIPTable, CFE_Status_t);
+
+    UT_GenStub_AddParam(CF_ValidateIPTable, void *, tbl_ptr);
+
+    UT_GenStub_Execute(CF_ValidateIPTable, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CF_ValidateIPTable, CFE_Status_t);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for CF_WakeUp()
  * ----------------------------------------------------
  */
