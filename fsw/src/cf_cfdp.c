@@ -950,6 +950,7 @@ CFE_Status_t CF_CFDP_InitEngine(void)
     CF_History_t      *h                = NULL;
     CF_Transaction_t  *t                = CF_AppData.engine.transactions;
     CF_ChunkWrapper_t *c                = CF_AppData.engine.chunks;
+    CFE_Status_t       status           = CF_ERROR;
     CFE_Status_t       ret              = CFE_SUCCESS;
     int                chunk_mem_offset = 0;
     int                i                = 0;
@@ -973,18 +974,23 @@ CFE_Status_t CF_CFDP_InitEngine(void)
             {
                 CFE_EVS_SendEvent(CF_EID_ERR_INIT_PIPE, CFE_EVS_EventType_ERROR,
                                   "CF: failed to create pipe %s, returned 0x%08lx", nbuf, (unsigned long)ret);
-                break;
+                CF_AppData.hk.channel_hk[i].channel_closed = 1;
             }
-
-            ret = CFE_SB_SubscribeLocal(CFE_SB_ValueToMsgId(CF_AppData.config_table->chan[i].mid_input),
-                                        CF_AppData.engine.channels[i].conn_id.pipe,
-                                        CF_AppData.config_table->chan[i].pipe_depth_input);
-            if (ret != CFE_SUCCESS)
+            else
             {
-                CFE_EVS_SendEvent(CF_EID_ERR_INIT_SUB, CFE_EVS_EventType_ERROR,
-                                  "CF: failed to subscribe to MID 0x%lx, returned 0x%08lx",
-                                  (unsigned long)CF_AppData.config_table->chan[i].mid_input, (unsigned long)ret);
-                break;
+                ret = CFE_SB_SubscribeLocal(CFE_SB_ValueToMsgId(CF_AppData.config_table->chan[i].mid_input),
+                                            CF_AppData.engine.channels[i].conn_id.pipe,
+                                            CF_AppData.config_table->chan[i].pipe_depth_input);
+                if (ret != CFE_SUCCESS)
+                {
+                    CFE_EVS_SendEvent(CF_EID_ERR_INIT_SUB, CFE_EVS_EventType_ERROR,
+                                    "CF: failed to subscribe to MID 0x%lx, returned 0x%08lx",
+                                    (unsigned long)CF_AppData.config_table->chan[i].mid_input, (unsigned long)ret);
+                }
+                else
+                {
+                    status = CFE_SUCCESS;
+                }
             }
         }
         else if (CF_AppData.config_table->chan[i].connection_type == CF_UDP_CHANNEL)
@@ -995,7 +1001,11 @@ CFE_Status_t CF_CFDP_InitEngine(void)
                 CFE_EVS_SendEvent(CF_EID_ERR_INIT_UDP, CFE_EVS_EventType_ERROR,
                                   "CF: failed to initialize UDP connection for channel %d, returned 0x%08lx", i,
                                   (unsigned long)ret);
-                break;
+                CF_AppData.hk.channel_hk[i].channel_closed = 1;
+            }
+            else
+            {
+                status = CFE_SUCCESS;
             }
         }
         else
@@ -1031,6 +1041,7 @@ CFE_Status_t CF_CFDP_InitEngine(void)
                 CFE_EVS_SendEvent(CF_EID_ERR_INIT_SEM, CFE_EVS_EventType_ERROR,
                                   "CF: failed to get sem id for name %s, error=%ld",
                                   CF_AppData.config_table->chan[i].sem_name, (long)ret);
+                status = ret;
                 break;
             }
         }
@@ -1058,12 +1069,12 @@ CFE_Status_t CF_CFDP_InitEngine(void)
         }
     }
 
-    if (ret == CFE_SUCCESS)
+    if (status == CFE_SUCCESS)
     {
         CF_AppData.engine.enabled = 1;
     }
 
-    return ret;
+    return status;
 }
 
 /*----------------------------------------------------------------
@@ -1592,23 +1603,27 @@ void CF_CFDP_CycleEngine(void)
             c                                  = &CF_AppData.engine.channels[i];
             CF_AppData.engine.outgoing_counter = 0;
 
-            /* consume all received messages, even if channel is frozen */
-            CF_CFDP_ReceiveMessage(c);
-
-            if (!CF_AppData.hk.channel_hk[i].frozen)
+            /* skip all processing for channels that are closed */
+            if (!CF_AppData.hk.channel_hk[i].channel_closed)
             {
-                /* handle ticks before tx cycle. Do this because there may be a limited number of TX messages available
-                 * this cycle, and it's important to respond to class 2 ACK/NAK more than it is to send new filedata
-                 * PDUs. */
+                /* consume all received messages, even if channel is frozen */
+                CF_CFDP_ReceiveMessage(c);
 
-                /* cycle all transactions (tick) */
-                CF_CFDP_TickTransactions(c);
+                if (!CF_AppData.hk.channel_hk[i].frozen)
+                {
+                    /* handle ticks before tx cycle. Do this because there may be a limited number of TX messages available
+                    * this cycle, and it's important to respond to class 2 ACK/NAK more than it is to send new filedata
+                    * PDUs. */
 
-                /* cycle the current tx transaction */
-                CF_CFDP_CycleTx(c);
+                    /* cycle all transactions (tick) */
+                    CF_CFDP_TickTransactions(c);
 
-                CF_CFDP_ProcessPlaybackDirectories(c);
-                CF_CFDP_ProcessPollingDirectories(c);
+                    /* cycle the current tx transaction */
+                    CF_CFDP_CycleTx(c);
+
+                    CF_CFDP_ProcessPlaybackDirectories(c);
+                    CF_CFDP_ProcessPollingDirectories(c);
+                }
             }
         }
     }

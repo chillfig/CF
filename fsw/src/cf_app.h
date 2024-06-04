@@ -55,15 +55,13 @@
 
 #define CF_NULL_POINTER_ERR             -8 /**< \brief Null pointer error */
 #define CF_INVALID_MSG_LEN_ERR          -9 /**< \brief Invalid message length */
-#define CF_SOCKET_OPEN_ERR             -10 /**< \brief Socket open error */
-#define CF_SOCKET_BIND_ERR             -11 /**< \brief Socket bind error */
-#define CF_SOCKET_INVALID_ERR          -12 /**< \brief Socket is not defined */
-#define CF_SOCKET_SEND_ERR             -13 /**< \brief Socket send failure */
-#define CF_SOCKET_RECV_ERR             -14 /**< \brief Socket receive failure */
-#define CF_INVALID_SRC_ERR             -15 /**< \brief Message received from unexpected source */
+#define CF_SOCKET_INVALID_ERR          -10 /**< \brief Socket is not defined */
+#define CF_SOCKET_SEND_ERR             -11 /**< \brief Socket send failure */
+#define CF_SOCKET_RECV_ERR             -12 /**< \brief Socket receive failure */
+#define CF_INVALID_SRC_ERR             -13 /**< \brief Message received from unexpected source */
 
-#define CF_NO_IP_TBL_ERR               -16 /**< \brief IP table was not loaded properly */
-#define CF_INVALID_ADDR_ERR            -17 /**< \brief Invalid ip address */
+#define CF_NO_IP_TBL_ERR               -14 /**< \brief IP table was not loaded properly */
+#define CF_INVALID_ADDR_ERR            -15 /**< \brief Invalid ip address */
 
 /**\}*/
 

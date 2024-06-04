@@ -891,29 +891,39 @@ void Test_CF_CFDP_InitEngine(void)
 
     /* failure of CFE_SB_CreatePipe */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, NULL, &config);
-    UT_SetDeferredRetcode(UT_KEY(CFE_SB_CreatePipe), 1, CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
-    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
+    UT_SetDefaultReturnValue(UT_KEY(CFE_SB_CreatePipe), CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
+    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CF_ERROR);
     UtAssert_BOOL_FALSE(CF_AppData.engine.enabled);
+    UT_SetDefaultReturnValue(UT_KEY(CFE_SB_CreatePipe), CFE_SUCCESS);
+
 
     /* failure of CFE_SB_SubscribeLocal */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, NULL, &config);
-    UT_SetDeferredRetcode(UT_KEY(CFE_SB_SubscribeLocal), 1, CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
-    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
+    UT_SetDefaultReturnValue(UT_KEY(CFE_SB_SubscribeLocal), CFE_STATUS_EXTERNAL_RESOURCE_FAIL);
+    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CF_ERROR);
     UtAssert_BOOL_FALSE(CF_AppData.engine.enabled);
+    UT_SetDefaultReturnValue(UT_KEY(CFE_SB_SubscribeLocal), CFE_SUCCESS);
 
     /* success of CF_UDP_InitConnection */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, NULL, &config);
-    config->chan[0].connection_type = CF_UDP_CHANNEL;
-    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CFE_SUCCESS);
+    for (int i = 0; i < CF_NUM_CHANNELS; ++i)
+    {
+        config->chan[i].connection_type = CF_UDP_CHANNEL;
+    }
+    UT_SetDefaultReturnValue(UT_KEY(CF_UDP_InitConnection), CFE_SUCCESS);
     UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CFE_SUCCESS);
     UtAssert_BOOL_TRUE(CF_AppData.engine.enabled);
 
     /* failure of CF_UDP_InitConnection */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, NULL, &config);
-    config->chan[0].connection_type = CF_UDP_CHANNEL;
-    UT_SetDeferredRetcode(UT_KEY(CF_UDP_InitConnection), 1, CF_NULL_POINTER_ERR);
-    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CF_NULL_POINTER_ERR);
+    for (int i = 0; i < CF_NUM_CHANNELS; ++i)
+    {
+        config->chan[i].connection_type = CF_UDP_CHANNEL;
+    }
+    UT_SetDefaultReturnValue(UT_KEY(CF_UDP_InitConnection), CF_NULL_POINTER_ERR);
+    UtAssert_INT32_EQ(CF_CFDP_InitEngine(), CF_ERROR);
     UtAssert_BOOL_FALSE(CF_AppData.engine.enabled);
+    UT_SetDefaultReturnValue(UT_KEY(CF_UDP_InitConnection), CFE_SUCCESS);
 
     /* bad connection_type */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, NULL, &config);
@@ -1359,8 +1369,14 @@ void Test_CF_CFDP_CycleEngine(void)
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, &c, NULL, NULL, NULL);
     UtAssert_VOIDCALL(CF_CFDP_CycleEngine());
 
-    /* enabled but frozen */
-    CF_AppData.engine.enabled                        = 1;
+    /* enabled but channel closed */
+    CF_AppData.engine.enabled                               = 1;
+    CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].channel_closed = 1;
+    UtAssert_VOIDCALL(CF_CFDP_CycleEngine());
+    UtAssert_STUB_COUNT(CF_CFDP_ReceiveMessage, 6);
+
+    /* channel open but frozen */
+    CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].channel_closed = 0;
     CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].frozen = 1;
     UtAssert_VOIDCALL(CF_CFDP_CycleEngine());
 

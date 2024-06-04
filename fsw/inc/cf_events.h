@@ -1647,7 +1647,7 @@
  *
  *  \par Cause:
  *
- *  Switch IP command received for a non-UDP channel
+ *  Switch IP command, or Open/Close command received for a non-UDP channel
  */
 #define CF_EID_ERR_CMD_CONN_TYPE (186)
 
@@ -1672,6 +1672,17 @@
  *  Switch IP command received for a UDP address matching the current UDP address for the given channel
  */
 #define CF_EID_INF_CMD_CURR_ADDR (188)
+
+/**
+ * \brief CF Open/Close Command Received Event ID
+ *
+ *  \par Type: INFORMATION
+ *
+ *  \par Cause:
+ *
+ *  Receipt and successful processing of open or close UDP channel command
+ */
+#define CF_EID_INF_CMD_OPENCLOSE (189)
 
 /**\}*/
 

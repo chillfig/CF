@@ -79,10 +79,10 @@ void Test_CF_CFDP_UDP_MsgOutGet(void)
     /* Execute test */
     ret = CF_CFDP_UDP_MsgOutGet(&transaction, true);
     /* Verify outputs */
-    UtAssert_True(ret == &CF_AppData.engine.out.tx_pdudata, "CF_CFDP_UDP_MsgOutGet - 1/6: Nominal");
-    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 1, 0, "CF_CFDP_UDP_MsgOutGet - 1/6: Nominal");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 1, "CF_CFDP_UDP_MsgOutGet - 1/6: Nominal");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 1, "CF_CFDP_UDP_MsgOutGet - 1/6: Nominal");
+    UtAssert_True(ret == &CF_AppData.engine.out.tx_pdudata, "CF_CFDP_UDP_MsgOutGet - 1/7: Nominal");
+    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 1, 0, "CF_CFDP_UDP_MsgOutGet - 1/7: Nominal");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 1, "CF_CFDP_UDP_MsgOutGet - 1/7: Nominal");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 1, "CF_CFDP_UDP_MsgOutGet - 1/7: Nominal");
 
     /* ----- Test case #2 - NULL pointer error ----- */
     /* Setup */
@@ -96,8 +96,8 @@ void Test_CF_CFDP_UDP_MsgOutGet(void)
     /* Execute test */
     ret = CF_CFDP_UDP_MsgOutGet(NULL, true);
     /* Verify outputs */
-    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 2/6: Nominal");
-    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 0, 0, "CF_CFDP_UDP_MsgOutGet - 2/6: Nominal");
+    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 2/7: Nominal");
+    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 0, 0, "CF_CFDP_UDP_MsgOutGet - 2/7: Nominal");
 
     /* ----- Test case #3 - Nominal - Unlimited TX Messages ----- */
     /* Setup */
@@ -111,10 +111,10 @@ void Test_CF_CFDP_UDP_MsgOutGet(void)
     /* Execute test */
     ret = CF_CFDP_UDP_MsgOutGet(&transaction, false);
     /* Verify outputs */
-    UtAssert_True(ret == &CF_AppData.engine.out.tx_pdudata, "CF_CFDP_UDP_MsgOutGet - 3/6: Nominal - Unlimited tx msgs");
-    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 1, 0, "CF_CFDP_UDP_MsgOutGet - 3/6: Nominal - Unlimited tx msgs");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 1, "CF_CFDP_UDP_MsgOutGet - 3/6: Nominal - Unlimited tx msgs");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 1, "CF_CFDP_UDP_MsgOutGet - 3/6: Nominal - Unlimited tx msgs");
+    UtAssert_True(ret == &CF_AppData.engine.out.tx_pdudata, "CF_CFDP_UDP_MsgOutGet - 3/7: Nominal - Unlimited tx msgs");
+    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 1, 0, "CF_CFDP_UDP_MsgOutGet - 3/7: Nominal - Unlimited tx msgs");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 1, "CF_CFDP_UDP_MsgOutGet - 3/7: Nominal - Unlimited tx msgs");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 1, "CF_CFDP_UDP_MsgOutGet - 3/7: Nominal - Unlimited tx msgs");
 
     /* ----- Test case #4 - TX Message Limit Reached ----- */
     /* Setup */
@@ -125,10 +125,10 @@ void Test_CF_CFDP_UDP_MsgOutGet(void)
     /* Execute test */
     ret = CF_CFDP_UDP_MsgOutGet(&transaction, true);
     /* Verify outputs */
-    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 4/6: Tx msg limit reached");
-    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 5, 0, "CF_CFDP_UDP_MsgOutGet - 4/6: Tx msg limit reached");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 0, "CF_CFDP_UDP_MsgOutGet - 4/6: Tx msg limit reached");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 0, "CF_CFDP_UDP_MsgOutGet - 4/6: Tx msg limit reached");
+    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 4/7: Tx msg limit reached");
+    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 5, 0, "CF_CFDP_UDP_MsgOutGet - 4/7: Tx msg limit reached");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 0, "CF_CFDP_UDP_MsgOutGet - 4/7: Tx msg limit reached");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 0, "CF_CFDP_UDP_MsgOutGet - 4/7: Tx msg limit reached");
 
     /* ----- Test case #5 - Channel Frozen ----- */
     /* Setup */
@@ -141,10 +141,10 @@ void Test_CF_CFDP_UDP_MsgOutGet(void)
     /* Execute test */
     ret = CF_CFDP_UDP_MsgOutGet(&transaction, false);
     /* Verify outputs */
-    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 5/6: Channel frozen");
-    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 0, 0, "CF_CFDP_UDP_MsgOutGet - 5/6: Channel frozen");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 0, "CF_CFDP_UDP_MsgOutGet - 5/6: Channel frozen");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 0, "CF_CFDP_UDP_MsgOutGet - 5/6: Channel frozen");
+    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 5/7: Channel frozen");
+    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 0, 0, "CF_CFDP_UDP_MsgOutGet - 5/7: Channel frozen");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 0, "CF_CFDP_UDP_MsgOutGet - 5/7: Channel frozen");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 0, "CF_CFDP_UDP_MsgOutGet - 5/7: Channel frozen");
 
     /* ----- Test case #6 - Transaction Suspended ----- */
     /* Setup */
@@ -158,10 +158,27 @@ void Test_CF_CFDP_UDP_MsgOutGet(void)
     /* Execute test */
     ret = CF_CFDP_UDP_MsgOutGet(&transaction, false);
     /* Verify outputs */
-    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 6/6: Transaction suspended");
-    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 0, 0, "CF_CFDP_UDP_MsgOutGet - 6/6: Transaction suspended");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 0, "CF_CFDP_UDP_MsgOutGet - 6/6: Transaction suspended");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 0, "CF_CFDP_UDP_MsgOutGet - 6/6: Transaction suspended");
+    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 6/7: Transaction suspended");
+    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 0, 0, "CF_CFDP_UDP_MsgOutGet - 6/7: Transaction suspended");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 0, "CF_CFDP_UDP_MsgOutGet - 6/7: Transaction suspended");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 0, "CF_CFDP_UDP_MsgOutGet - 6/7: Transaction suspended");
+
+    /* ----- Test case #7 - UDP Channel Closed ----- */
+    /* Setup */
+    UT_CF_ClearAll();
+    chan_num = 0;
+    CF_AppData.config_table->chan[chan_num].max_outgoing_messages_per_wakeup = 5;
+    CF_AppData.engine.outgoing_counter = 0;
+    CF_AppData.hk.channel_hk[chan_num].channel_closed = 1;
+    transaction.chan_num = chan_num;
+    transaction.flags.com.suspended = false;
+    /* Execute test */
+    ret = CF_CFDP_UDP_MsgOutGet(&transaction, false);
+    /* Verify outputs */
+    UtAssert_True(ret == NULL, "CF_CFDP_UDP_MsgOutGet - 7/7: UDP channel closed");
+    UtAssert_IntegerCmpAbs(CF_AppData.engine.outgoing_counter, 0, 0, "CF_CFDP_UDP_MsgOutGet - 7/7: UDP channel closed");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_Init)) == 0, "CF_CFDP_UDP_MsgOutGet - 7/7: UDP channel closed");
+    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_EncodeStart)) == 0, "CF_CFDP_UDP_MsgOutGet - 7/7: UDP channel closed");
 }
 
 void Test_CF_CFDP_UDP_Send(void)

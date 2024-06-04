@@ -29,30 +29,30 @@
 
 int32 CF_UDP_InitConnection(CF_UDP_ConnectionData_t *udp_conn_data_ptr, CF_Channel_t *chan_ptr)
 {
-    int32 retval = CF_ERROR;
+    int32 retval = OS_ERROR;
     OS_SockAddr_t sock_addr = {0};
 
     if ((udp_conn_data_ptr == NULL) || (chan_ptr == NULL))
     {
-        retval = CF_NULL_POINTER_ERR;
+        retval = OS_INVALID_POINTER;
         goto CF_UDP_InitConnection_Exit_Tag;
     }
 
-    if (OS_SocketOpen(&chan_ptr->conn_id.sock_id, OS_SocketDomain_INET, OS_SocketType_DATAGRAM) != OS_SUCCESS)
+    retval = OS_SocketOpen(&chan_ptr->conn_id.sock_id, OS_SocketDomain_INET, OS_SocketType_DATAGRAM);
+    if (retval != OS_SUCCESS)
     {
-        retval = CF_SOCKET_OPEN_ERR;
         goto CF_UDP_InitConnection_Exit_Tag;
     }
 
-    OS_SocketAddrInit(&sock_addr, OS_SocketDomain_INET);
-    OS_SocketAddrFromString(&sock_addr, udp_conn_data_ptr->my_address.hostname);
-    OS_SocketAddrSetPort(&sock_addr, udp_conn_data_ptr->my_address.port);
+    (void)OS_SocketAddrInit(&sock_addr, OS_SocketDomain_INET);
+    (void)OS_SocketAddrFromString(&sock_addr, udp_conn_data_ptr->my_address.hostname);
+    (void)OS_SocketAddrSetPort(&sock_addr, udp_conn_data_ptr->my_address.port);
 
-    if (OS_SocketBind(chan_ptr->conn_id.sock_id, &sock_addr) != OS_SUCCESS)
+    retval = OS_SocketBind(chan_ptr->conn_id.sock_id, &sock_addr);
+    if (retval != OS_SUCCESS)
     {
         OS_close(chan_ptr->conn_id.sock_id);
         chan_ptr->conn_id.sock_id = OS_OBJECT_ID_UNDEFINED;
-        retval = CF_SOCKET_BIND_ERR;
         goto CF_UDP_InitConnection_Exit_Tag;
     }
 

@@ -81,7 +81,8 @@ CF_Logical_PduBuffer_t *CF_CFDP_UDP_MsgOutGet(const CF_Transaction_t *transactio
     }
 
     if ((CF_AppData.hk.channel_hk[transaction_ptr->chan_num].frozen == false) && 
-        (transaction_ptr->flags.com.suspended == false))
+        (transaction_ptr->flags.com.suspended == false) && 
+        (CF_AppData.hk.channel_hk[transaction_ptr->chan_num].channel_closed == false))
     {
         CFE_MSG_Init((CFE_MSG_Message_t *)CF_AppData.engine.msgBuffer, 
                       CFE_SB_ValueToMsgId(chan_cfg_ptr->mid_output), 
