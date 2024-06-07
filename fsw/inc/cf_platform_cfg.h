@@ -139,7 +139,7 @@ typedef uint32 CF_TransactionSeq_t;
  */
 #define CF_CHANNEL_NUM_RX_CHUNKS_PER_TRANSACTION \
     {                                            \
-        CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS \
+        CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS \
     }
 
 /**
@@ -153,7 +153,7 @@ typedef uint32 CF_TransactionSeq_t;
  */
 #define CF_CHANNEL_NUM_TX_CHUNKS_PER_TRANSACTION \
     {                                            \
-        CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS \
+        CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS, CF_NAK_MAX_SEGMENTS \
     }
 
 /**
@@ -168,7 +168,7 @@ typedef uint32 CF_TransactionSeq_t;
  */
 /* CF_TOTAL_CHUNKS must be equal to the total number of chunks per rx/tx transactions per channel */
 /* (in other words, the summation of all elements in CF_CHANNEL_NUM_R/TX_CHUNKS_PER_TRANSACTION */
-#define CF_TOTAL_CHUNKS (CF_NAK_MAX_SEGMENTS * 4)
+#define CF_TOTAL_CHUNKS (CF_NAK_MAX_SEGMENTS * CF_NUM_CHANNELS * CF_Direction_NUM)
 
 /* definitions that affect file queuing */
 /**
