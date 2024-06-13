@@ -113,6 +113,7 @@ void CF_CFDP_UDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *pdu_buf_ptr)
     CFE_MSG_Message_t *msg_ptr = (CFE_MSG_Message_t *)CF_AppData.engine.msgBuffer;
     CFE_MSG_Size_t spp_msgsize = 0;
     int32 sent_msgsize = 0;
+    uint8 alignment;
 
     if (pdu_buf_ptr == NULL || chan_num >= CF_NUM_CHANNELS)
     {
@@ -124,6 +125,12 @@ void CF_CFDP_UDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *pdu_buf_ptr)
     spp_msgsize = offsetof(CF_PduTlmMsg_t, pdu_hdr);
     spp_msgsize += pdu_buf_ptr->pdu_header.header_encoded_length;
     spp_msgsize += pdu_buf_ptr->pdu_header.data_encoded_length;
+    /* ensure that we pad the message so that the CRC falls on a 4 byte-boundary*/
+    alignment = (spp_msgsize % sizeof(uint32));
+    if (alignment != 0)
+    {
+        spp_msgsize += (sizeof(uint32) - alignment);
+    }
     spp_msgsize += CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES;
 
     CFE_MSG_SetSize(msg_ptr, spp_msgsize);
