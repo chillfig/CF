@@ -798,6 +798,8 @@ CFE_Status_t CF_CFDP_DecodeHeader(CF_DecoderState_t *state, CF_Logical_PduHeader
 
             /* The header length is where decoding ended at this point */
             plh->header_encoded_length = CF_CODEC_GET_POSITION(state);
+            /* Adjust the max size to remove any padding */
+            state->codec_state.max_size = (plh->header_encoded_length + plh->data_encoded_length);
         }
     }
     return ret;

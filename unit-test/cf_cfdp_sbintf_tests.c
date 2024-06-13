@@ -334,8 +334,9 @@ void Test_CF_CFDP_SB_Send(void)
      */
     CF_Logical_PduBuffer_t *ph;
 
-    /* nominal */
+    /* nominal with CRC padding */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_TX, &ph, NULL, NULL, NULL, NULL);
+    ph->pdu_header.data_encoded_length = 1;
     UtAssert_VOIDCALL(CF_CFDP_SB_Send(UT_CFDP_CHANNEL, ph));
     UtAssert_UINT32_EQ(CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.pdu, 1);
     UtAssert_STUB_COUNT(CFE_MSG_SetSize, 1);

@@ -189,14 +189,14 @@ void Test_CF_CFDP_UDP_Send(void)
     char cStrEvent[256] = {0};
     CF_Logical_PduBuffer_t buf;
 
-    /* ----- Test case #1 - Nominal Case ----- */
+    /* ----- Test case #1 - Nominal Case with CRC padding ----- */
     /* Setup */
     UT_CF_ClearAll();
     chan_num = 2;
-    sent_msgsize = 60;
+    sent_msgsize = 64;
     CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu = 0;
     buf.pdu_header.header_encoded_length = 12;
-    buf.pdu_header.data_encoded_length = 24;
+    buf.pdu_header.data_encoded_length = 27;
     UT_SetDeferredRetcode(UT_KEY(CF_UDP_SendTo), 1, sent_msgsize);
     /* Execute test */
     CF_CFDP_UDP_Send(chan_num, &buf);
