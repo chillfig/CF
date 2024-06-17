@@ -35,6 +35,7 @@ void UT_DefaultHandler_CF_TxnStatus_IsError(void *, UT_EntryKey_t, const UT_Stub
 void UT_DefaultHandler_CF_WrappedOpenCreate(void *, UT_EntryKey_t, const UT_StubContext_t *);
 void UT_DefaultHandler_CF_WriteHistoryQueueDataToFile(void *, UT_EntryKey_t, const UT_StubContext_t *);
 void UT_DefaultHandler_CF_WriteTxnQueueDataToFile(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_CF_strnlen(void *, UT_EntryKey_t, const UT_StubContext_t *);
 
 /*
  * ----------------------------------------------------
@@ -430,6 +431,7 @@ size_t CF_strnlen(const char *str, size_t maxlen)
     UT_GenStub_AddParam(CF_strnlen, size_t, maxlen);
 
     UT_GenStub_Execute(CF_strnlen, Basic, NULL);
+    // UT_GenStub_Execute(CF_strnlen, Basic, UT_DefaultHandler_CF_strnlen);
 
     return UT_GenStub_GetReturnValue(CF_strnlen, size_t);
 }

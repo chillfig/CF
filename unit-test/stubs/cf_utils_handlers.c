@@ -214,3 +214,21 @@ void UT_DefaultHandler_CF_TxnStatus_IsError(void *UserObj, UT_EntryKey_t FuncKey
 
     UT_Stub_SetReturnValue(FuncKey, result);
 }
+
+
+void UT_DefaultHandler_CF_strnlen(void *UserObj, UT_EntryKey_t FuncKey, const UT_StubContext_t *Context)
+{
+    CF_strnlen_context_t *ctxt = UT_CF_GetContextBuffer(FuncKey, CF_strnlen_context_t);
+    uint8 retval;
+    const char *              ptr;
+
+    
+    if (ctxt)
+    {
+        ptr = UT_Hook_GetArgValueByName(Context, "str", const char *);
+        strncpy(ctxt->str, ptr, sizeof(ctxt->str));
+    }
+    retval = strlen(ctxt->str);
+
+    UT_Stub_SetReturnValue(FuncKey, retval);
+}

@@ -199,6 +199,11 @@ typedef struct
     CF_Transaction_t *context_t;
 } CF_CList_Traverse_R_context_t;
 
+typedef struct
+{
+    char            str[CF_FILENAME_MAX_LEN];
+} CF_strnlen_context_t;
+
 void *UT_CF_GetContextBufferImpl(UT_EntryKey_t FuncKey, size_t ReqSize);
 #define UT_CF_GetContextBuffer(key, type) ((type *)UT_CF_GetContextBufferImpl(key, sizeof(type)))
 
