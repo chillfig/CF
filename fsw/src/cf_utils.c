@@ -183,20 +183,23 @@ CFE_Status_t CF_WriteHistoryEntryToFile(osal_id_t fd, const CF_History_t *h)
         {
             case 0:
                 CF_Assert(h->dir < CF_Direction_NUM);
+                /* SAD: No need to check snprintf return; buffer size is sufficient for the formatted output */
                 snprintf(linebuf, sizeof(linebuf), "SEQ (%lu, %lu)\tDIR: %s\tPEER %lu\tSTAT: %d\t",
                          (unsigned long)h->src_eid, (unsigned long)h->seq_num, CF_DSTR[h->dir],
                          (unsigned long)h->peer_eid, (int)h->txn_stat);
                 break;
             case 1:
+                /* SAD: No need to check snprintf return; buffer size is sufficient for the formatted output */
                 snprintf(linebuf, sizeof(linebuf), "SRC: %s\t", h->fnames.src_filename);
                 break;
             case 2:
             default:
+                /* SAD: No need to check snprintf return; buffer size is sufficient for the formatted output */
                 snprintf(linebuf, sizeof(linebuf), "DST: %s\n", h->fnames.dst_filename);
                 break;
         }
 
-        len = strlen(linebuf);
+        len = OS_strnlen(linebuf, sizeof(linebuf));
         ret = CF_WrappedWrite(fd, linebuf, len);
         if (ret != len)
         {
