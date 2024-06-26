@@ -415,9 +415,9 @@ void CF_DoSuspRes(CF_TransactionCmd_t *cmd, uint8 action)
     if (ret == 1 && args.same)
     {
         /* A single transaction was mached, and it was already set the same way */
-        CFE_EVS_SendEvent(CF_EID_ERR_CMD_SUSPRES_SAME, CFE_EVS_EventType_ERROR,
+        CFE_EVS_SendEvent(CF_EID_INF_CMD_SUSPRES_SAME, CFE_EVS_EventType_INFORMATION,
                           "CF: %s cmd: setting suspend flag to current value of %d", msgstr[action], action);
-        ++CF_AppData.hk.counters.err;
+        ++CF_AppData.hk.counters.cmd;
     }
     else if (ret <= 0)
     {
@@ -1131,9 +1131,9 @@ void CF_CmdEnableEngine(CFE_SB_Buffer_t *msg)
     }
     else
     {
-        CFE_EVS_SendEvent(CF_EID_ERR_CMD_ENG_ALREADY_ENA, CFE_EVS_EventType_ERROR,
+        CFE_EVS_SendEvent(CF_EID_INF_CMD_ENG_ALREADY_ENA, CFE_EVS_EventType_INFORMATION,
                           "CF: received enable engine command while engine already enabled");
-        ++CF_AppData.hk.counters.err;
+        ++CF_AppData.hk.counters.cmd;
     }
 }
 
@@ -1153,9 +1153,9 @@ void CF_CmdDisableEngine(CFE_SB_Buffer_t *msg)
     }
     else
     {
-        CFE_EVS_SendEvent(CF_EID_ERR_CMD_ENG_ALREADY_DIS, CFE_EVS_EventType_ERROR,
+        CFE_EVS_SendEvent(CF_EID_INF_CMD_ENG_ALREADY_DIS, CFE_EVS_EventType_INFORMATION,
                           "CF: received disable engine command while engine already disabled");
-        ++CF_AppData.hk.counters.err;
+        ++CF_AppData.hk.counters.cmd;
     }
 }
 
