@@ -612,6 +612,8 @@ void Test_CF_CFDP_SendMd(void)
     strncpy(h->fnames.src_filename, "src1", sizeof(h->fnames.src_filename));
     t->state = CF_TxnState_S1;
     t->fsize = 1234;
+    UT_SetDefaultReturnValue(UT_KEY(OS_strnlen), strlen(h->fnames.src_filename));
+    UT_SetDeferredRetcode(UT_KEY(OS_strnlen), 2, strlen(h->fnames.dst_filename));
     UtAssert_INT32_EQ(CF_CFDP_SendMd(t), CFE_SUCCESS);
     UtAssert_UINT32_EQ(md->size, t->fsize);
     UtAssert_STRINGBUF_EQ(md->dest_filename.data_ptr, md->dest_filename.length, h->fnames.dst_filename,
@@ -626,6 +628,8 @@ void Test_CF_CFDP_SendMd(void)
     strncpy(h->fnames.src_filename, "src2", sizeof(h->fnames.src_filename));
     t->state = CF_TxnState_S2;
     t->fsize = 5678;
+    UT_SetDefaultReturnValue(UT_KEY(OS_strnlen), strlen(h->fnames.src_filename));
+    UT_SetDeferredRetcode(UT_KEY(OS_strnlen), 2, strlen(h->fnames.dst_filename));
     UtAssert_INT32_EQ(CF_CFDP_SendMd(t), CFE_SUCCESS);
     UtAssert_UINT32_EQ(md->size, t->fsize);
     UtAssert_UINT32_EQ(md->dest_filename.length, sizeof(h->fnames.dst_filename));
