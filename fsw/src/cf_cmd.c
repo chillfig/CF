@@ -941,9 +941,9 @@ CFE_Status_t CF_CmdValidateMaxOutgoing(uint32 val, uint8 chan_num)
 {
     CFE_Status_t ret = CFE_SUCCESS;
 
-    if (!val && !CF_AppData.config_table->chan[chan_num].sem_name[0])
+    if (val == 0)
     {
-        /* can't have unlimited messages and no semaphore */
+        /* can't have unlimited messages */
         ret = CF_ERROR; /* failed */
     }
 

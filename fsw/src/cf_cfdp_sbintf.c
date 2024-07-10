@@ -87,7 +87,6 @@ CF_Logical_PduBuffer_t *CF_CFDP_SB_MsgOutGet(const CF_Transaction_t *t, bool sil
     CF_Channel_t           *c = (CF_AppData.engine.channels + t->chan_num);
     bool                    success = true;
     CF_Logical_PduBuffer_t *ret;
-    int32                   os_status;
 
     /* this function should not be called more than once before the message
      * is sent, so if there's already an outgoing message allocated
@@ -110,27 +109,14 @@ CF_Logical_PduBuffer_t *CF_CFDP_SB_MsgOutGet(const CF_Transaction_t *t, bool sil
 
     if (success && !CF_AppData.hk.channel_hk[t->chan_num].frozen && !t->flags.com.suspended)
     {
-        /* first, check if there's room in the pipe for the message we want to build */
-        if (OS_ObjectIdDefined(c->sem_id))
-        {
-            os_status = OS_CountSemTimedWait(c->sem_id, 0);
-        }
-        else
-        {
-            os_status = OS_SUCCESS;
-        }
-
-        /* Allocate message buffer on success */
-        if (os_status == OS_SUCCESS)
-        {
-            CF_AppData.engine.out.msg = CFE_SB_AllocateMessageBuffer(offsetof(CF_PduTlmMsg_t, pdu_hdr) + CF_MAX_PDU_SIZE +
-                                                                     CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES);
-        }
+        /* Allocate message buffer */
+        CF_AppData.engine.out.msg = CFE_SB_AllocateMessageBuffer(offsetof(CF_PduTlmMsg_t, pdu_hdr) + CF_MAX_PDU_SIZE +
+                                                                 CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES);
 
         if (!CF_AppData.engine.out.msg)
         {
             c->cur = t; /* remember where we were for next time */
-            if (!silent && (os_status == OS_SUCCESS))
+            if (!silent)
             {
                 CFE_EVS_SendEvent(CF_EID_ERR_CFDP_NO_MSG, CFE_EVS_EventType_ERROR,
                                   "CF: no output message buffer available");

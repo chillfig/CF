@@ -384,7 +384,6 @@ void Test_CF_CFDP_SB_MsgOutGet(void)
      */
     CF_Transaction_t *t;
     CF_ConfigTable_t *config;
-    CF_Channel_t *    c;
 
     /* nominal */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_TX, NULL, NULL, NULL, &t, NULL);
@@ -402,13 +401,6 @@ void Test_CF_CFDP_SB_MsgOutGet(void)
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_TX, NULL, NULL, NULL, &t, &config);
     config->chan[UT_CFDP_CHANNEL].max_outgoing_messages_per_wakeup = 3;
     UtAssert_NOT_NULL(CF_CFDP_SB_MsgOutGet(t, false));
-    UtAssert_NULL(CF_CFDP_SB_MsgOutGet(t, false));
-    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
-
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_TX, NULL, &c, NULL, &t, NULL);
-    c->sem_id = OS_ObjectIdFromInteger(123);
-    UtAssert_NOT_NULL(CF_CFDP_SB_MsgOutGet(t, false));
-    UT_SetDeferredRetcode(UT_KEY(OS_CountSemTimedWait), 1, OS_ERROR_TIMEOUT);
     UtAssert_NULL(CF_CFDP_SB_MsgOutGet(t, false));
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
 

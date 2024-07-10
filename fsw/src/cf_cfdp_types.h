@@ -436,8 +436,6 @@ typedef struct CF_Channel
     /* For polling directories, the configuration data is in a table. */
     CF_Poll_t poll[CF_MAX_POLLING_DIR_PER_CHAN];
 
-    osal_id_t sem_id; /**< \brief semaphore id for output pipe */
-
     const CF_Transaction_t *cur; /**< \brief current transaction during channel cycle */
 
     uint8 tick_type;
