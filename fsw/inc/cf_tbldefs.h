@@ -117,7 +117,6 @@ typedef struct CF_ChannelConfig
     CF_UDP_ConnectionData_t udp_config;    /**< \brief info for this channel's direct UDP connection */
     CF_ChanConnTypeEnum_t connection_type; /**< \brief CF_UDP_CHANNEL or CF_SB_CHANNEL */
 
-    char  sem_name[OS_MAX_API_NAME]; /**< \brief name of throttling semaphore in TO; if empty, no throttle */
     uint8 dequeue_enabled;           /**< \brief if 1, then the channel will make pending transactions active */
     char  move_dir[OS_MAX_PATH_LEN]; /**< \brief Move directory if not empty */
 } CF_ChannelConfig_t;

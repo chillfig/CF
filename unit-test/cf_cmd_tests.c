@@ -3483,7 +3483,7 @@ void Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_IsNot_0_Return_0_Success(void)
                   local_result);
 }
 
-void Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_But_sem_name_IsNot_NULL_Return_0_Success(void)
+void Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_Return_1_Fail(void)
 {
     /* Arrange */
     uint32 arg_val      = 0;
@@ -3492,26 +3492,6 @@ void Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_But_sem_name_IsNot_NULL_R
     CFE_Status_t     local_result;
 
     CF_AppData.config_table = &config_table;
-    memset(CF_AppData.config_table->chan[arg_chan_num].sem_name, (char)Any_uint8_Except(0), 1);
-
-    /* Act */
-    local_result = CF_CmdValidateMaxOutgoing(arg_val, arg_chan_num);
-
-    /* Assert */
-    UtAssert_True(local_result == CFE_SUCCESS, "CF_CmdValidateMaxOutgoing returned %d and should be 0 (CFE_SUCCESS)",
-                  local_result);
-}
-
-void Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_And_sem_name_Is_NULL_Return_1_Fail(void)
-{
-    /* Arrange */
-    uint32 arg_val      = 0;
-    uint8  arg_chan_num = Any_cf_chan_num(); /* Any_cf_chan_num used here because value matters to this test */
-    CF_ConfigTable_t config_table;
-    CFE_Status_t     local_result;
-
-    CF_AppData.config_table = &config_table;
-    memset(CF_AppData.config_table->chan[arg_chan_num].sem_name, (char)0, 1);
 
     /* Act */
     local_result = CF_CmdValidateMaxOutgoing(arg_val, arg_chan_num);
@@ -4888,12 +4868,9 @@ void add_CF_CmdValidateMaxOutgoing_tests(void)
 {
     UtTest_Add(Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_IsNot_0_Return_0_Success, cf_cmd_tests_Setup,
                cf_cmd_tests_Teardown, "Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_IsNot_0_Return_0_Success");
-    UtTest_Add(Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_But_sem_name_IsNot_NULL_Return_0_Success,
-               cf_cmd_tests_Setup, cf_cmd_tests_Teardown,
-               "Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_But_sem_name_IsNot_NULL_Return_0_Success");
-    UtTest_Add(Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_And_sem_name_Is_NULL_Return_1_Fail, cf_cmd_tests_Setup,
+    UtTest_Add(Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_Return_1_Fail, cf_cmd_tests_Setup,
                cf_cmd_tests_Teardown,
-               "Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_And_sem_name_Is_NULL_Return_1_Fail");
+               "Test_CF_CmdValidateMaxOutgoing_WhenGiven_val_Is_0_Return_1_Fail");
 }
 
 void add_CF_CmdGetSetParam_tests(void)

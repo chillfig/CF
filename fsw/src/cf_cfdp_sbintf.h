@@ -57,11 +57,8 @@
 /** @brief Obtain a message buffer to construct a PDU inside.
  *
  * @par Description
- *       This performs the handshaking via semaphore with the consumer
- *       of the PDU. If the semaphore can be obtained, a software bus
- *       buffer is obtained and it is returned. If the semaphore is
- *       unavailable, then the current transaction is remembered for next
- *       engine cycle. If silent is true, then the event message is not
+ *       A software bus buffer is obtained and it is returned. 
+ *       If silent is true, then the event message is not
  *       printed in the case of no buffer available.
  *
  * @par Assumptions, External Events, and Notes:

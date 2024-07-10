@@ -84,7 +84,6 @@ CF_ConfigTable_t CF_config_table =
             .udp_config.the_other_addr.hostname = "127.0.0.1",
             .udp_config.the_other_addr.port = 11001,
             .connection_type = CF_UDP_CHANNEL,
-            .sem_name = "",
             .dequeue_enabled = 1,
             .move_dir = ""
         },
@@ -105,7 +104,6 @@ CF_ConfigTable_t CF_config_table =
             .udp_config.the_other_addr.hostname = "127.0.0.1",
             .udp_config.the_other_addr.port = 11021,
             .connection_type = CF_UDP_CHANNEL,
-            .sem_name = "",
             .dequeue_enabled = 1,
             .move_dir = ""
         },
@@ -122,7 +120,6 @@ CF_ConfigTable_t CF_config_table =
             .pipe_depth_input = 16,
             .polldir = {},
             .connection_type = CF_SB_CHANNEL,
-            .sem_name = "",
             .dequeue_enabled = 1,
             .move_dir = ""
         },
@@ -139,7 +136,6 @@ CF_ConfigTable_t CF_config_table =
             .pipe_depth_input = 16,
             .polldir = {},
             .connection_type = CF_SB_CHANNEL,
-            .sem_name = "",
             .dequeue_enabled = 1,
             .move_dir = ""
         },
@@ -156,7 +152,6 @@ CF_ConfigTable_t CF_config_table =
             .pipe_depth_input = 16,
             .polldir = {},
             .connection_type = CF_SB_CHANNEL,
-            .sem_name = "",
             .dequeue_enabled = 1,
             .move_dir = ""
         },
@@ -173,7 +168,6 @@ CF_ConfigTable_t CF_config_table =
             .pipe_depth_input = 16,
             .polldir = {},
             .connection_type = CF_SB_CHANNEL,
-            .sem_name = "",
             .dequeue_enabled = 1,
             .move_dir = ""
         },
@@ -190,7 +184,6 @@ CF_ConfigTable_t CF_config_table =
             .pipe_depth_input = 16,
             .polldir = {},
             .connection_type = CF_SB_CHANNEL,
-            .sem_name = "",
             .dequeue_enabled = 1,
             .move_dir = ""
         }

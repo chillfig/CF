@@ -168,18 +168,6 @@
 #define CF_EID_ERR_INIT_MSG_RECV (29)
 
 /**
- * \brief CF Channel Semaphore Initialization Failed Event ID
- *
- *  \par Type: ERROR
- *
- *  \par Cause:
- *
- *  Failure from get semaphore by name call during engine channel initialization,
- *  semaphore needs to exist before engine is initialized.
- */
-#define CF_EID_ERR_INIT_SEM (30)
-
-/**
  * \brief CF Channel Create Pipe Failed Event ID
  *
  *  \par Type: ERROR
