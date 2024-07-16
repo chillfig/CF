@@ -144,10 +144,12 @@ void CF_CFDP_UDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *pdu_buf_ptr)
         CFE_EVS_SendEvent(CF_EID_ERR_CFDP_SEND, CFE_EVS_EventType_ERROR,
                           "CF_CFDP_UDP_Send(chan_num=%d): CF_UDP_SendTo() only sent %d bytes, expected %zu bytes sent",
                           chan_num, sent_msgsize, spp_msgsize);
-        goto CF_CFDP_UDP_Send_Exit_Tag;
+        CF_AppData.hk.channel_hk[chan_num].counters.sent.error++;
     }
-
-    CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu++;
+    else
+    {
+        CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu++;
+    }
 
 CF_CFDP_UDP_Send_Exit_Tag:
     return;
