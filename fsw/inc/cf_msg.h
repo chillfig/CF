@@ -78,7 +78,9 @@ typedef struct CF_HkSent
 {
     uint64 file_data_bytes;      /**< \brief Sent File data bytes */
     uint32 pdu;                  /**< \brief Sent PDUs counter */
+    uint32 error;                /**< \brief Sent PDUs with error counter, see related event for cause */
     uint32 nak_segment_requests; /**< \brief Sent NAK segment requests counter */
+    uint32 spare;                /**< \brief Alignment spare to avoid implicit padding */
 } CF_HkSent_t;
 
 /**

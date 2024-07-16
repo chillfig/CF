@@ -217,6 +217,7 @@ void Test_CF_CFDP_UDP_Send(void)
     chan_num = 2;
     sent_msgsize = 64;
     CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu = 0;
+    CF_AppData.hk.channel_hk[chan_num].counters.sent.error = 0;
     buf.pdu_header.header_encoded_length = 12;
     buf.pdu_header.data_encoded_length = 27;
     UT_SetDeferredRetcode(UT_KEY(CF_UDP_SendTo), 1, sent_msgsize);
@@ -224,6 +225,7 @@ void Test_CF_CFDP_UDP_Send(void)
     CF_CFDP_UDP_Send(chan_num, &buf);
     /* Verify outputs */
     UtAssert_IntegerCmpAbs(CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu, 1, 0, "Test_CF_CFDP_UDP_Send - 1/1: Nominal");
+    UtAssert_IntegerCmpAbs(CF_AppData.hk.channel_hk[chan_num].counters.sent.error, 0, 0, "Test_CF_CFDP_UDP_Send - 1/1: Nominal");
     UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_SetSize)) == 1, "Test_CF_CFDP_UDP_Send - 1/4: Nominal");
     UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_SetMsgTime)) == 1, "Test_CF_CFDP_UDP_Send - 1/4: Nominal");
     UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_GenerateChecksum)) == 1, "Test_CF_CFDP_UDP_Send - 1/4: Nominal");
@@ -236,10 +238,12 @@ void Test_CF_CFDP_UDP_Send(void)
     UT_CF_ClearAll();
     chan_num = 2;
     CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu = 0;
+    CF_AppData.hk.channel_hk[chan_num].counters.sent.error = 0;
     /* Execute test */
     CF_CFDP_UDP_Send(chan_num, NULL);
     /* Verify outputs */
     UtAssert_IntegerCmpAbs(CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu, 0, 0, "Test_CF_CFDP_UDP_Send - 2/4: NULL pointer");
+    UtAssert_IntegerCmpAbs(CF_AppData.hk.channel_hk[chan_num].counters.sent.error, 0, 0, "Test_CF_CFDP_UDP_Send - 2/4: NULL pointer");
     UtAssert_True(UT_GetStubCount(UT_KEY(CF_UDP_SendTo)) == 0, "Test_CF_CFDP_UDP_Send - 2/4: NULL pointer");
 
     /* ----- Test case #3 - Invalid channel number ----- */
@@ -258,6 +262,7 @@ void Test_CF_CFDP_UDP_Send(void)
     sent_msgsize = 40;
     spp_msgsize = 60;
     CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu = 0;
+    CF_AppData.hk.channel_hk[chan_num].counters.sent.error = 0;
     buf.pdu_header.header_encoded_length = 12;
     buf.pdu_header.data_encoded_length = 24;
     UT_SetDeferredRetcode(UT_KEY(CF_UDP_SendTo), 1, sent_msgsize);
@@ -265,6 +270,7 @@ void Test_CF_CFDP_UDP_Send(void)
     CF_CFDP_UDP_Send(chan_num, &buf);
     /* Verify outputs */
     UtAssert_IntegerCmpAbs(CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu, 0, 0, "Test_CF_CFDP_UDP_Send - 4/4: Send Error");
+    UtAssert_IntegerCmpAbs(CF_AppData.hk.channel_hk[chan_num].counters.sent.error, 1, 0, "Test_CF_CFDP_UDP_Send - 4/4: Send Error");
     UtAssert_True(UT_GetStubCount(UT_KEY(CF_UDP_SendTo)) == 1, "Test_CF_CFDP_UDP_Send - 4/4: Send Error");
     snprintf(cStrEvent, sizeof(cStrEvent),
              "CF_CFDP_UDP_Send(chan_num=%d): CF_UDP_SendTo() only sent %d bytes, expected %zu bytes sent",

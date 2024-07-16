@@ -182,9 +182,12 @@ void CF_CFDP_SB_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
         CFE_EVS_SendEvent(CF_EID_ERR_CFDP_SEND, CFE_EVS_EventType_ERROR,
                           "CF_CFDP_UDP_Send(chan_num=%d): CFE_SB_TransmitBuffer() failed (0x%08X)",
                           chan_num, status);
+        ++CF_AppData.hk.channel_hk[chan_num].counters.sent.error;
     }
-
-    ++CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu;
+    else
+    {
+        ++CF_AppData.hk.channel_hk[chan_num].counters.sent.pdu;
+    }
 
     CF_AppData.engine.out.msg = NULL;
 }

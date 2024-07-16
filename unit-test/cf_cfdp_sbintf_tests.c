@@ -361,6 +361,7 @@ void Test_CF_CFDP_SB_Send(void)
     ph->pdu_header.data_encoded_length = 1;
     UtAssert_VOIDCALL(CF_CFDP_SB_Send(UT_CFDP_CHANNEL, ph));
     UtAssert_UINT32_EQ(CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.pdu, 1);
+    UtAssert_UINT32_EQ(CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.error, 0);
     UtAssert_STUB_COUNT(CFE_MSG_SetSize, 1);
     UtAssert_STUB_COUNT(CFE_SB_TransmitBuffer, 1);
     UT_CF_AssertNotEventID(CF_EID_ERR_CFDP_SEND);
@@ -369,9 +370,11 @@ void Test_CF_CFDP_SB_Send(void)
     UT_ResetState(0);
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_TX, &ph, NULL, NULL, NULL, NULL);
     CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.pdu = 0;
+    CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.error = 0;
     UT_SetDeferredRetcode(UT_KEY(CFE_SB_TransmitBuffer), 1, CF_ERROR);
     UtAssert_VOIDCALL(CF_CFDP_SB_Send(UT_CFDP_CHANNEL, ph));
-    UtAssert_UINT32_EQ(CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.pdu, 1);
+    UtAssert_UINT32_EQ(CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.pdu, 0);
+    UtAssert_UINT32_EQ(CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.error, 1);
     UtAssert_STUB_COUNT(CFE_MSG_SetSize, 1);
     UtAssert_STUB_COUNT(CFE_SB_TransmitBuffer, 1);
     UT_CF_AssertEventID(CF_EID_ERR_CFDP_SEND);
