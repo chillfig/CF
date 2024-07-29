@@ -58,6 +58,8 @@
 #define CF_MINOR_VERSION (0)  /**< \brief Minor version number */
 #define CF_REVISION      (99) /**< \brief Revision number */
 
+#define CF_CODENAME "gw_draco_v2.2" /**< \brief parent bundle for this version */
+
 /**\}*/
 
 #endif /* CF_VERSION_H */

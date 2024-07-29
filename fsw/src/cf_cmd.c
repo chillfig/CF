@@ -69,8 +69,8 @@
  *-----------------------------------------------------------------*/
 void CF_CmdNoop(CFE_SB_Buffer_t *msg)
 {
-    CFE_EVS_SendEvent(CF_EID_INF_CMD_NOOP, CFE_EVS_EventType_INFORMATION, "CF: No-Op received, Version %d.%d.%d.%d",
-                      CF_MAJOR_VERSION, CF_MINOR_VERSION, CF_REVISION, CF_MISSION_REV);
+    CFE_EVS_SendEvent(CF_EID_INF_CMD_NOOP, CFE_EVS_EventType_INFORMATION, "CF: No-Op received, Version %d.%d.%d.%d %s",
+                      CF_MAJOR_VERSION, CF_MINOR_VERSION, CF_REVISION, CF_MISSION_REV, CF_CODENAME);
     ++CF_AppData.hk.counters.cmd;
 }
 
