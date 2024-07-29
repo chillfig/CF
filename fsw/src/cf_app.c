@@ -376,8 +376,8 @@ CFE_Status_t CF_Init(void)
     if (status == CFE_SUCCESS)
     {
         status =
-            CFE_EVS_SendEvent(CF_EID_INF_INIT, CFE_EVS_EventType_INFORMATION, "CF Initialized. Version %d.%d.%d.%d",
-                              CF_MAJOR_VERSION, CF_MINOR_VERSION, CF_REVISION, CF_MISSION_REV);
+            CFE_EVS_SendEvent(CF_EID_INF_INIT, CFE_EVS_EventType_INFORMATION, "CF Initialized. Version %d.%d.%d.%d %s",
+                              CF_MAJOR_VERSION, CF_MINOR_VERSION, CF_REVISION, CF_MISSION_REV, CF_CODENAME);
         if (status != CFE_SUCCESS)
         {
             CFE_ES_WriteToSysLog("CF: error sending init event, returned 0x%08lx", (unsigned long)status);
