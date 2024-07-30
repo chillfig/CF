@@ -95,6 +95,8 @@ static void UT_CFDP_S_SetupBasicTestState(UT_CF_Setup_t setup, CF_Logical_PduBuf
     static CF_History_t           ut_history;
     static CF_Transaction_t       ut_transaction;
     static CF_ConfigTable_t       ut_config_table;
+    static CF_ChunkWrapper_t      ut_chunk_wrapper;
+    static CF_ChunkList_t         ut_chunk_list; 
 
     /*
      * always clear all objects, regardless of what was asked for.
@@ -105,11 +107,15 @@ static void UT_CFDP_S_SetupBasicTestState(UT_CF_Setup_t setup, CF_Logical_PduBuf
     memset(&ut_history, 0, sizeof(ut_history));
     memset(&ut_transaction, 0, sizeof(ut_transaction));
     memset(&ut_config_table, 0, sizeof(ut_config_table));
+    memset(&ut_chunk_wrapper, 0, sizeof(ut_chunk_wrapper));
+    memset(&ut_chunk_list, 0, sizeof(ut_chunk_list));
 
     /* certain pointers should be connected even if they were not asked for,
      * as internal code may assume these are set (test cases may un-set) */
     ut_transaction.history  = &ut_history;
     ut_history.txn_stat     = CF_TxnStatus_UNDEFINED;
+    ut_transaction.chunks   = &ut_chunk_wrapper;
+    ut_transaction.chunks->chunks=ut_chunk_list;
     CF_AppData.config_table = &ut_config_table;
 
     if (pdu_buffer_p)

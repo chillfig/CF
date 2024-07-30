@@ -764,12 +764,12 @@ void Test_CF_ProcessMsg_UnrecognizedCommandEnterDefaultPath(void)
 {
     /* Arrange */
     CFE_SB_MsgId_t   forced_MsgID = CFE_SB_INVALID_MSG_ID;
-    CFE_SB_Buffer_t *arg_msg      = NULL;
+    CFE_SB_Buffer_t  arg_msg;
 
     UT_SetDataBuffer(UT_KEY(CFE_MSG_GetMsgId), &forced_MsgID, sizeof(forced_MsgID), false);
 
     /* Act */
-    CF_ProcessMsg(arg_msg);
+    CF_ProcessMsg(&arg_msg);
 
     /* Assert */
     UtAssert_UINT32_EQ(CF_AppData.hk.counters.err, 1);

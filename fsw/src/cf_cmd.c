@@ -791,7 +791,7 @@ void CF_CmdPurgeQueue(CFE_SB_Buffer_t *msg)
 void CF_CmdWriteQueue(CFE_SB_Buffer_t *msg)
 {
     CF_WriteQueueCmd_t *wq      = (CF_WriteQueueCmd_t *)msg;
-    CF_Channel_t *      c       = &CF_AppData.engine.channels[wq->chan];
+    CF_Channel_t *      c; 
     osal_id_t           fd      = OS_OBJECT_ID_UNDEFINED;
     bool                success = true;
     int32               ret;
@@ -828,6 +828,8 @@ void CF_CmdWriteQueue(CFE_SB_Buffer_t *msg)
     /* if type is type_up, or all types */
     if (success && ((wq->type == CF_Type_all) || (wq->type == CF_Type_up)))
     {
+        /* Now that we know the channel parameter is good, we can assign */
+        c = &CF_AppData.engine.channels[wq->chan];
         /* process uplink queue data */
         if ((wq->queue == CF_Queue_all) || (wq->queue == CF_Queue_active))
         {

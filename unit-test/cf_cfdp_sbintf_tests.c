@@ -75,6 +75,11 @@ static void UT_CFDP_SetupBasicRxState(CF_Logical_PduBuffer_t *pdu_buffer)
     CFE_MSG_Size_t           sz;
     CFE_MSG_Type_t           msg_type = CFE_MSG_Type_Cmd;
 
+    /* Ensure the state is reset for all functions we set below */
+    UT_ResetState(UT_KEY(CFE_MSG_GetSize));
+    UT_ResetState(UT_KEY(CFE_MSG_GetType));
+    UT_ResetState(UT_KEY(CFE_SB_ReceiveBuffer));
+
     memset(pdu_buffer, 0, sizeof(*pdu_buffer));
     memset(bytes, 0, sizeof(bytes));
 
@@ -94,7 +99,7 @@ static void UT_CFDP_SetupBasicRxState(CF_Logical_PduBuffer_t *pdu_buffer)
     UT_SetDataBuffer(UT_KEY(CFE_MSG_GetSize), &sz, sizeof(sz), true);
 
     /* setup for a potential call to CFE_MSG_GetType() */
-    UT_SetDataBuffer(UT_KEY(CFE_MSG_GetType), &msg_type, sizeof(msg_type), false);
+    UT_SetDataBuffer(UT_KEY(CFE_MSG_GetType), &msg_type, sizeof(msg_type), true);
 }
 
 static void UT_CFDP_SetupBasicTxState(CF_Logical_PduBuffer_t *pdu_buffer)
@@ -242,6 +247,7 @@ void Test_CF_CFDP_SB_ReceiveMessage(void)
     CF_Logical_PduBuffer_t *ph;
     CFE_MSG_Type_t          msg_type = CFE_MSG_Type_Tlm;
     size_t *                msg_size_buf;
+    CFE_SB_Buffer_t *       bufptr;
 
     /* no-config - the max per wakeup will be 0, and this is a noop */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, &c, NULL, NULL, NULL);
@@ -252,16 +258,19 @@ void Test_CF_CFDP_SB_ReceiveMessage(void)
     config->chan[UT_CFDP_CHANNEL].rx_max_messages_per_wakeup = 1;
     UT_SetDeferredRetcode(UT_KEY(CFE_SB_ReceiveBuffer), 1, CFE_SB_NO_MESSAGE);
     UtAssert_VOIDCALL(CF_CFDP_SB_ReceiveMessage(c));
+    UT_ResetState(UT_KEY(CFE_SB_ReceiveBuffer));
 
     /* Set up with a zero size input message, this should fail decoding */
     msg_size_buf = 0;
+    //UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, &c, NULL, NULL, &config);
+    bufptr = &UT_r_msg.sb_buf;
+    UT_SetDataBuffer(UT_KEY(CFE_SB_ReceiveBuffer), &bufptr, sizeof(bufptr), true);
     UT_SetDeferredRetcode(UT_KEY(CF_CFDP_RecvPh), 1, -1);
     UT_SetDataBuffer(UT_KEY(CFE_MSG_GetSize), &msg_size_buf, sizeof(msg_size_buf), false);
-    UT_SetDataBuffer(UT_KEY(CFE_MSG_GetType), &msg_type, sizeof(msg_type), false);
+    UT_SetDataBuffer(UT_KEY(CFE_MSG_GetType), &msg_type, sizeof(msg_type), true);
+    UT_SetDeferredRetcode(UT_KEY(CFE_SB_ReceiveBuffer), 1, CFE_SUCCESS);
     UtAssert_VOIDCALL(CF_CFDP_SB_ReceiveMessage(c));
     UT_ResetState(UT_KEY(CF_CFDP_RecvPh));
-    UT_ResetState(UT_KEY(CFE_MSG_GetSize));
-    UT_ResetState(UT_KEY(CFE_MSG_GetType));
 
     /*
      *  - CF_CFDP_RecvPh() succeeds
@@ -275,6 +284,7 @@ void Test_CF_CFDP_SB_ReceiveMessage(void)
     UtAssert_UINT32_EQ(t->history->dir, CF_Direction_RX);
     UtAssert_UINT32_EQ(t->state_data.r.r2.dc, CF_CFDP_FinDeliveryCode_INCOMPLETE);
     UtAssert_UINT32_EQ(t->state_data.r.r2.fs, CF_CFDP_FinFileStatus_DISCARDED);
+
 
     /* failure in CF_CFDP_RecvPh - nothing really happens here */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, NULL, &c, NULL, &t, &config);
@@ -355,6 +365,8 @@ void Test_CF_CFDP_SB_Send(void)
      * void CF_CFDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
      */
     CF_Logical_PduBuffer_t *ph;
+    CFE_SB_Buffer_t SBBuf;
+    CF_AppData.engine.out.msg = &SBBuf;
 
     /* nominal with CRC padding */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_TX, &ph, NULL, NULL, NULL, NULL);
@@ -368,6 +380,7 @@ void Test_CF_CFDP_SB_Send(void)
 
     /* CFE_SB_TransmitBuffer failed */
     UT_ResetState(0);
+    CF_AppData.engine.out.msg = &SBBuf;
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_TX, &ph, NULL, NULL, NULL, NULL);
     CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.pdu = 0;
     CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].counters.sent.error = 0;
