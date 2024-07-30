@@ -98,6 +98,8 @@ static void UT_CFDP_SetupBasicTestState(UT_CF_Setup_t setup, CF_Logical_PduBuffe
     static CF_History_t           ut_history;
     static CF_Transaction_t       ut_transaction;
     static CF_ConfigTable_t       ut_config_table;
+    static CF_ChunkWrapper_t      ut_chunk_wrapper;
+    static CF_ChunkList_t         ut_chunk_list; 
 
     /*
      * always clear all objects, regardless of what was asked for.
@@ -108,10 +110,14 @@ static void UT_CFDP_SetupBasicTestState(UT_CF_Setup_t setup, CF_Logical_PduBuffe
     memset(&ut_history, 0, sizeof(ut_history));
     memset(&ut_transaction, 0, sizeof(ut_transaction));
     memset(&ut_config_table, 0, sizeof(ut_config_table));
+    memset(&ut_chunk_wrapper, 0, sizeof(ut_chunk_wrapper));
+    memset(&ut_chunk_list, 0, sizeof(ut_chunk_list));
 
     /* certain pointers should be connected even if they were not asked for,
      * as internal code may assume these are set (test cases may un-set) */
     ut_transaction.history  = &ut_history;
+    ut_transaction.chunks = &ut_chunk_wrapper;
+    ut_transaction.chunks->chunks=ut_chunk_list;
     CF_AppData.config_table = &ut_config_table;
 
     if (pdu_buffer_p)
@@ -345,6 +351,9 @@ void Test_CF_CFDP_RecvMd(void)
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, &ph, NULL, NULL, &t, NULL);
     md                       = &ph->int_header.md;
     md->dest_filename.length = CF_FILENAME_MAX_LEN + 1;
+    md->source_filename.length   = sizeof(src) - 1;
+    md->source_filename.data_ptr = src;
+
     UtAssert_INT32_EQ(CF_CFDP_RecvMd(t, ph), CF_PDU_METADATA_ERROR);
     UT_CF_AssertEventID(CF_EID_ERR_PDU_INVALID_DST_LEN);
 
@@ -498,6 +507,10 @@ void Test_CF_CFDP_RecvIdle(void)
     CF_History_t *          h;
     CF_Logical_PduBuffer_t *ph;
     CF_ChunkWrapper_t       ut_unused_chunks;
+    CF_Logical_PduMd_t *    md;
+    char              src[]  = "mds";
+    char              dest[] = "mdd";
+
 
     /* setup for FindUnusedChunks */
     memset(&ut_unused_chunks, 0, sizeof(ut_unused_chunks));
@@ -521,14 +534,29 @@ void Test_CF_CFDP_RecvIdle(void)
 
     /* nominal call, file metadata, class 1 */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, &ph, NULL, &h, &t, NULL);
+
     ph->fdirective.directive_code = CF_CFDP_FileDirective_METADATA;
     ph->pdu_header.txm_mode       = 1; /* class 1 */
+    md                           = &ph->int_header.md;
+    md->size                     = 10;
+    md->dest_filename.length     = sizeof(dest) - 1;
+    md->dest_filename.data_ptr   = dest;
+    md->source_filename.length   = sizeof(src) - 1;
+    md->source_filename.data_ptr = src;
+    strcpy(t->history->fnames.src_filename,"mds");
+    strcpy(t->history->fnames.dst_filename,"mdd");
     UtAssert_VOIDCALL(CF_CFDP_RecvIdle(t, ph));
     UtAssert_INT32_EQ(t->state, CF_TxnState_R1);
 
     /* nominal call, file metadata, class 2 */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, &ph, NULL, &h, &t, NULL);
     ph->fdirective.directive_code = CF_CFDP_FileDirective_METADATA;
+    md                           = &ph->int_header.md;
+    md->size                     = 10;
+    md->dest_filename.length     = sizeof(dest) - 1;
+    md->dest_filename.data_ptr   = dest;
+    md->source_filename.length   = sizeof(src) - 1;
+    md->source_filename.data_ptr = src;
     UtAssert_VOIDCALL(CF_CFDP_RecvIdle(t, ph));
     UtAssert_INT32_EQ(t->state, CF_TxnState_R2);
 
@@ -1399,7 +1427,7 @@ void Test_CF_CFDP_ResetTransaction(void)
     UtAssert_VOIDCALL(CF_CFDP_ResetTransaction(t, 0));
 
     /* nominal call */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, NULL, &t, NULL);
+    UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, NULL, &h, &t, NULL);
     CF_AppData.hk.channel_hk[UT_CFDP_CHANNEL].q_size[t->flags.com.q_index] = 10;
     UtAssert_VOIDCALL(CF_CFDP_ResetTransaction(t, 1));
     UtAssert_STUB_COUNT(CF_FreeTransaction, 1);

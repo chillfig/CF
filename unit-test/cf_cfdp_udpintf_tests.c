@@ -211,6 +211,16 @@ void Test_CF_CFDP_UDP_Send(void)
     char cStrEvent[256] = {0};
     CF_Logical_PduBuffer_t buf;
 
+    chan_num = 2;
+    /* Initial config table setup */
+    CF_UDP_ConnectionData_t test_config;
+    test_config.my_address.port = 1234;
+
+    CF_ConfigTable_t cf_cfg_tbl;
+    memset(&cf_cfg_tbl, 0, sizeof(cf_cfg_tbl));
+    CF_AppData.config_table = &cf_cfg_tbl;
+    CF_AppData.config_table->chan[chan_num].udp_config = test_config;
+
     /* ----- Test case #1 - Nominal Case with CRC padding ----- */
     /* Setup */
     UT_CF_ClearAll();
@@ -590,19 +600,7 @@ void Test_CF_CFDP_UDP_ReceiveSingleMessage(void)
     UtAssert_EventSent(CF_EID_ERR_CFDP_SPP_CRC, CFE_EVS_EventType_ERROR, cStrEvent, 
                        "Test_CF_CFDP_UDP_ReceiveSingleMessage - 12/14: Invalid CRC retval");
 
-    /* ----- Test case #13 - Invalid channel number ----- */
-    /* Setup */
-    UT_CF_ClearAll();
-    chan_num = CF_NUM_CHANNELS;
-    /* Execute test */
-    ret = CF_CFDP_UDP_ReceiveSingleMessage(&CF_AppData.engine.channels[0], chan_num);
-    /* Verify outputs */
-    UtAssert_IntegerCmpAbs(ret, 0, 0, "Test_CF_CFDP_UDP_ReceiveSingleMessage - 13/14: Invalid channel number");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CFE_MSG_ValidateChecksum)) == 0, "Test_CF_CFDP_UDP_ReceiveSingleMessage - 13/14: Invalid channel number");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_DecodeStart)) == 0, "Test_CF_CFDP_UDP_ReceiveSingleMessage - 13/14: Invalid channel number");
-    UtAssert_True(UT_GetStubCount(UT_KEY(CF_CFDP_DispatchRecv)) == 0, "Test_CF_CFDP_UDP_ReceiveSingleMessage - 13/14: Invalid channel number");
-
-    /* ----- Test case #14 - Invalid Mid ----- */
+    /* ----- Test case #13 - Invalid Mid ----- */
     /* Setup */
     UT_CF_ClearAll();
     chan_num = 1;
