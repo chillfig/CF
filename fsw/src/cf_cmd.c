@@ -825,11 +825,12 @@ void CF_CmdWriteQueue(CFE_SB_Buffer_t *msg)
         }
     }
 
+    /* Now that we know the channel parameter is good, we can assign */
+    c = &CF_AppData.engine.channels[wq->chan];
+
     /* if type is type_up, or all types */
     if (success && ((wq->type == CF_Type_all) || (wq->type == CF_Type_up)))
     {
-        /* Now that we know the channel parameter is good, we can assign */
-        c = &CF_AppData.engine.channels[wq->chan];
         /* process uplink queue data */
         if ((wq->queue == CF_Queue_all) || (wq->queue == CF_Queue_active))
         {
