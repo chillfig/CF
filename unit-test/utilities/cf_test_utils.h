@@ -50,7 +50,7 @@
 #include "common_types.h"
 
 /* cf includes */
-#include "cf_platform_cfg.h"
+#include <cf_platform_cfg.h>
 #include "cf_cfdp_pdu.h"
 #include "cf_app.h"
 #include "cf_utils.h"

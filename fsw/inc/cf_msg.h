@@ -48,15 +48,16 @@
 #ifndef CF_MSG_H
 #define CF_MSG_H
 
-#include <cfe.h>
+#include "cfe.h"
 #include <cf_platform_cfg.h>
-#include <cf_extern_typedefs.h>
-#include <cf_tbldefs.h>
+#include "cf_extern_typedefs.h"
+#include "cf_tbldefs.h"
 
 #define CF_ALL_CHANNELS (255)
 #define CF_ALL_POLLDIRS (CF_ALL_CHANNELS)
 #define CF_COMPOUND_KEY (254)
 
+/* Structure: CF_HkCmdCounters_t (4 bytes total) */
 /**
  * \defgroup cfscftlm CFS CFDP Telemetry
  * \{
@@ -65,113 +66,212 @@
 /**
  * \brief Housekeeping command counters
  */
-typedef struct CF_HkCmdCounters
+typedef struct
 {
-    uint16 cmd; /**< \brief Command success counter */
-    uint16 err; /**< \brief Command error counter */
-} CF_HkCmdCounters_t;
+   uint16 cmd;        /**< \brief Valid command counter
+                                  \n[0] (2 bytes) */
+   uint16 err;        /**< \brief Invalid command counter
+                                  \n[2] (2 bytes) */
+} CF_HkCmdCounters_t; /**< \brief Total size of 4 bytes */
+
+CompileTimeAssert(sizeof(CF_HkCmdCounters_t) == 4,
+                  CF_HkCmdCounters_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Housekeeping sent counters
  */
-typedef struct CF_HkSent
+typedef struct
 {
-    uint64 file_data_bytes;      /**< \brief Sent File data bytes */
-    uint32 pdu;                  /**< \brief Sent PDUs counter */
-    uint32 error;                /**< \brief Sent PDUs with error counter, see related event for cause */
-    uint32 nak_segment_requests; /**< \brief Sent NAK segment requests counter */
-    uint32 spare;                /**< \brief Alignment spare to avoid implicit padding */
-} CF_HkSent_t;
+   uint64 file_data_bytes;        /**< \brief Sent File data bytes
+                                             \n[ 0] (8 bytes) */
+   uint32 pdu;                   /**< \brief Sent PDU counter
+                                             \n[ 8] (4 bytes) */
+   uint32 error;                 /**< \brief Sent PDUs with error counter, see related event for cause
+                                             \n[12] (4 bytes) */
+   uint32 nak_segment_requests;  /**< \brief Sent NAK segment request counter
+                                             \n[16] (4 bytes) */
+   uint32 spare;                 /**< \brief For byte alignment
+                                             \n[20] (4 bytes) */
+} CF_HkSent_t;                   /**< \brief Total size of 24 bytes */   
+
+CompileTimeAssert((sizeof(CF_HkSent_t) % 8) == 0,
+                  CF_HkSent_t_SIZE_NOT_MULTIPLE_OF_8);
+                  
+CompileTimeAssert(sizeof(CF_HkSent_t) == 24,
+                  CF_HkSent_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Housekeeping received counters
  */
-typedef struct CF_HkRecv
+typedef struct
 {
-    uint64 file_data_bytes;      /**< \brief Received File data bytes */
-    uint32 pdu;                  /**< \brief Received PDUs with valid header counter */
-    uint32 error;                /**< \brief Received PDUs with error counter, see related event for cause */
-    uint16 spurious;             /**< \brief Received PDUs with invalid directive code for current context or
-                                  *          file directive FIN without matching active transaction counter,
-                                  *          see related event for cause
-                                  */
-    uint16 dropped;              /**< \brief Received PDUs dropped due to a transaction error */
-    uint32 nak_segment_requests; /**< \brief Received NAK segment requests counter */
-} CF_HkRecv_t;
+   uint64 file_data_bytes;      /**< \brief Received File data bytes
+                                            \n[ 0] (8 bytes) */
+   uint32 pdu;                  /**< \brief Received PDU with valid header counter
+                                            \n[ 8] (4 bytes) */
+   uint32 error;                /**< \brief Received PDU with error counter; see related event for cause
+                                            \n[12] (4 bytes) */
+   uint16 spurious;             /**< \brief Received PDUs with invalid directive code for current context, or
+                                            file directive FIN without matching active transaction counter;
+                                            see related event for cause
+                                            \n[16] (2 bytes) */
+   uint16 dropped;              /**< \brief Received PDUs dropped due to a transaction error 
+                                            \n[18] (2 bytes) */
+   uint32 nak_segment_requests; /**< \brief Received NAK segment requests counter
+                                            \n[20] (4 bytes) */
+} CF_HkRecv_t;                  /**< \brief Total size of 24 bytes */
+
+CompileTimeAssert((sizeof(CF_HkRecv_t) % 8) == 0,
+                  CF_HkRecv_t_SIZE_NOT_MULTIPLE_OF_8);
+
+CompileTimeAssert(sizeof(CF_HkRecv_t) == 24,
+                  CF_HkRecv_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Housekeeping fault counters
  */
-typedef struct CF_HkFault
+typedef struct
 {
-    uint16 file_open;          /**< \brief File open fault counter */
-    uint16 file_read;          /**< \brief File read fault counter */
-    uint16 file_seek;          /**< \brief File seek fault counter */
-    uint16 file_write;         /**< \brief File write fault counter */
-    uint16 file_rename;        /**< \brief File rename fault counter */
-    uint16 directory_read;     /**< \brief Directory read fault counter */
-    uint16 crc_mismatch;       /**< \brief CRC mismatch fault counter */
-    uint16 file_size_mismatch; /**< \brief File size mismatch fault counter */
-    uint16 nak_limit;          /**< \brief NAK limit exceeded fault counter */
-    uint16 ack_limit;          /**< \brief ACK limit exceeded fault counter */
-    uint16 inactivity_timer;   /**< \brief Inactivity timer exceeded counter */
-    uint16 spare;              /**< \brief Alignment spare to avoid implicit padding */
-} CF_HkFault_t;
+   uint16 file_open;          /**< \brief File open fault counter
+                                          \n[ 0] (2 bytes) */
+   uint16 file_read;          /**< \brief File read fault counter
+                                          \n[ 2] (2 bytes) */
+   uint16 file_seek;          /**< \brief File seek fault counter
+                                          \n[ 4] (2 bytes) */
+   uint16 file_write;         /**< \brief File write fault counter
+                                          \n[ 6] (2 bytes) */
+   uint16 file_rename;        /**< \brief File rename fault counter
+                                          \n[ 8] (2 bytes) \brief  */
+   uint16 directory_read;     /**< \brief Directory read fault counter
+                                          \n[10] (2 bytes) */
+   uint16 crc_mismatch;       /**< \brief CRC mismatch fault counter
+                                          \n[12] (2 bytes)*/
+   uint16 file_size_mismatch; /**< \brief File size mismatch fault counter
+                                          \n[14] (2 bytes) */
+   uint16 nak_limit;          /**< \brief NAK limit exceeded fault counter
+                                          \n[16] (2 bytes)*/
+   uint16 ack_limit;          /**< \brief ACK limit exceeded fault counter
+                                          \n[18] (2 bytes) */
+   uint16 inactivity_timer;   /**< \brief Inactivity timer exceeded counter
+                                          \n[20] (2 bytes) */
+   uint16 spare;              /**< \brief For byte alignment
+                                          \n[22] (2 bytes) */
+} CF_HkFault_t;               /**< \brief Total size of 24 bytes */
+
+CompileTimeAssert((sizeof(CF_HkFault_t) % 8) == 0,
+                  CF_HkFault_t_SIZE_NOT_MULTIPLE_OF_8);
+
+CompileTimeAssert(sizeof(CF_HkFault_t) == 24,
+                  CF_HkFault_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Housekeeping counters
  */
-typedef struct CF_HkCounters
+typedef struct
 {
-    CF_HkSent_t  sent;  /**< \brief Sent counters */
-    CF_HkRecv_t  recv;  /**< \brief Received counters */
-    CF_HkFault_t fault; /**< \brief Fault counters */
-} CF_HkCounters_t;
+   CF_HkSent_t  sent;   /**< \brief Sent counters
+                                    \n[ 0] (16 bytes)  */
+   CF_HkRecv_t  recv;   /**< \brief Received counters
+                                    \n[16] (24 bytes)  */
+   CF_HkFault_t fault;  /**< \brief Fault counters
+                                    \n[40] (24 bytes)  */
+} CF_HkCounters_t;      /**< \brief Total size of 64 bytes */
+
+CompileTimeAssert((sizeof(CF_HkCounters_t) % 8) == 0,
+                  CF_HkCounters_t_SIZE_NOT_MULTIPLE_OF_8);
+
+CompileTimeAssert(sizeof(CF_HkCounters_t) == sizeof(CF_HkSent_t) + sizeof(CF_HkRecv_t) + sizeof(CF_HkFault_t),
+                  CF_HkCounters_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Housekeeping channel data
  */
-typedef struct CF_HkChannel_Data
+typedef struct
 {
-    CF_HkCounters_t counters;                /**< \brief Counters */
-    uint16          q_size[CF_QueueIdx_NUM]; /**< \brief Queue sizes */
-    uint8           poll_counter;            /**< \brief Number of active polling directories */
-    uint8           playback_counter;        /**< \brief Number of active playback directories */
-    uint8           frozen;                  /**< \brief Frozen state: 0 == not frozen, else frozen */
-    uint8           channel_closed;          /**< \brief Channel state: 0 == open, else closed
-                                                         Non-UDP channels are always considered open */
-    uint8           spare[6];                /**< \brief Alignment spare (uint64 values in the counters) */
-} CF_HkChannel_Data_t;
+   CF_HkCounters_t counters;                 /**< \brief Counters
+                                                         \n[ 0] (64 bytes)  */
+   uint16          q_size[CF_QueueIdx_NUM];  /**< \brief Queue sizes
+                                                         \n[64] (CF_QueueIdx_NUM x 2 bytes)  */
+   uint8           poll_counter;             /**< \brief Number of active polling directories
+                                                         \n[78] (1 byte)  */
+   uint8           playback_counter;         /**< \brief Number of active playback directories
+                                                         \n[79] (1 byte)  */
+   uint8           frozen;                   /**< \brief Frozen state: 0 == not frozen, else frozen
+                                                         \n[80] (1 byte)  */
+   uint8           channel_closed;           /**< \brief Channel state: 0 == open, else closed;
+                                                         Non-UDP channels are always considered open
+                                                         \n[81] (1 byte) */
+   uint8           spare[6];                 /**< \brief For byte alignment
+                                                       \n[82] (6 x 1 byte)  */
+} CF_HkChannel_Data_t;                       /**< \brief Total size of 88 bytes */
+
+CompileTimeAssert((sizeof(CF_HkChannel_Data_t) % 8) == 0,
+                  CF_HkChannel_Data_t_SIZE_NOT_MULTIPLE_OF_8);
+
+CompileTimeAssert(sizeof(CF_HkChannel_Data_t) == sizeof(CF_HkCounters_t) + (CF_QueueIdx_NUM * 2) + 10,
+                  CF_HkChannel_Data_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Housekeeping packet
  */
-typedef struct CF_HkPacket
+typedef struct
 {
-    CFE_MSG_TelemetryHeader_t tlm_header; /**< \brief Telemetry header */
-    CF_HkCmdCounters_t        counters;   /**< \brief Command counters */
-    uint8                     spare[4];   /**< \brief Alignment spare (CF_HkCmdCounters_t is 4 bytes) */
+   CFE_MSG_TelemetryHeader_t tlm_header;                   /**< \brief Telemetry header
+                                                                       \n[  0] (20 bytes) */
+   CF_HkCmdCounters_t        counters;                     /**< \brief Command counters
+                                                                       \n[ 20] (4 bytes)  */
+   CF_HkChannel_Data_t       channel_hk[CF_NUM_CHANNELS];  /**< \brief Per channel housekeeping data
+                                                                       \n[ 24] (CF_NUM_CHANNELS x 88 bytes) */
+   uint32                    spare;                        /**< \brief For byte alignment
+                                                                       \n[200] (4 bytes)  */
+   uint32                    CRCValue;                     /**< \brief Message CRC/checksum
+                                                                       \n[204] (4 bytes) */
+} CF_HkPacket_t;                                           /**< Total size of 208 bytes */
 
-    CF_HkChannel_Data_t channel_hk[CF_NUM_CHANNELS]; /**< \brief Per channel housekeeping data */
-} CF_HkPacket_t;
+CompileTimeAssert((sizeof(CF_HkPacket_t) % 8) == 0, 
+                  CF_HkPacket_t_SIZE_NOT_MULTIPLE_OF_8);
+                  
+CompileTimeAssert(sizeof(CF_HkPacket_t) == 
+                  sizeof(CFE_MSG_TelemetryHeader_t) + sizeof(CF_HkCmdCounters_t) + 
+                  (CF_NUM_CHANNELS * sizeof(CF_HkChannel_Data_t)) + 8,
+                  CF_HkPacket_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief End of transaction packet
  */
-typedef struct CF_EotPacket
+typedef struct
 {
-    CFE_MSG_TelemetryHeader_t tlm_header; /**< \brief Telemetry header */
-    CF_TransactionSeq_t       seq_num;    /**< \brief transaction identifier, stays constant for entire transfer */
-    uint32                    channel;    /**< \brief Channel number */
-    uint32                    direction;  /**< \brief direction of this transaction */
-    uint32                    state;      /**< \brief Transaction state */
-    uint32                    txn_stat;   /**< \brief final status code of transaction (extended CFDP CC) */
-    CF_EntityId_t             src_eid;    /**< \brief the source eid of the transaction */
-    CF_EntityId_t             peer_eid;   /**< \brief peer_eid is always the "other guy", same src_eid for RX */
-    uint32                    fsize;      /**< \brief File size */
-    uint32                    crc_result; /**< \brief CRC result */
-    CF_TxnFilenames_t         fnames;     /**< \brief file names associated with this transaction */
-} CF_EotPacket_t;
+   CFE_MSG_TelemetryHeader_t tlm_header;  /**< \brief Telemetry header
+                                                      \n[  0] (20 bytes)*/
+   uint32                    seq_num;     /**< \brief Transaction identifier, stays constant for entire transfer
+                                                      \n[ 20] (4 bytes) */
+   uint32                    channel;     /**< \brief Channel number
+                                                      \n[ 24] (4 bytes) */
+   uint32                    direction;   /**< \brief Direction of this transaction
+                                                      \n[ 28] (4 bytes) */
+   uint32                    state;       /**< \brief Transaction state
+                                                      \n[ 32] (4 bytes) */
+   uint32                    txn_stat;    /**< \brief Final status code of the transaction
+                                                      \n[ 36] (4 bytes) */
+   uint32                    src_eid;     /**< \brief The source eid of the transaction
+                                                      \n[ 40] (4 bytes) */
+   uint32                    peer_eid;    /**< \brief Peer_eid is always the "other guy", same src_eid for RX
+                                                      \n[ 44] (4 bytes) */
+   uint32                    fsize;       /**< \brief File size
+                                                      \n[ 48] (4 bytes) */
+   uint32                    crc_result;  /**< \brief CRC result
+                                                      \n[ 52] (4 bytes) */
+   CF_TxnFilenames_t         fnames;      /**< \brief File names associated with this transaction
+                                                      \n[ 56] (2 x (CF_FILENAME_MAX_LEN x 1 byte)) */
+   uint32                    CRCValue;    /**< \brief Message CRC/checksum
+                                                      \n[184] (4 bytes) */
+} CF_EotPacket_t;                         /**< \brief Total size of 188 bytes */
+
+CompileTimeAssert((sizeof(CF_EotPacket_t) % 4) == 0, 
+                  CF_EotPacket_t_SIZE_NOT_MULTIPLE_OF_4);
+
+CompileTimeAssert(sizeof(CF_EotPacket_t) == sizeof(CFE_MSG_TelemetryHeader_t) + sizeof(CF_TxnFilenames_t) + 40,
+                  CF_EotPacket_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Single application file info packet buffer
@@ -181,7 +281,7 @@ typedef struct CF_EotPacket
  */
 typedef union
 {
-    CFE_SB_Buffer_t SBBuf; /**< \brief Message buffer for alignment */
+    CFE_SB_Buffer_t  SBBuf; /**< \brief Message buffer for alignment */
     CF_EotPacket_t  eot;   /**< \brief Single end of transaction info packet */
 } CF_EotPktBuf_t;
 
@@ -980,8 +1080,7 @@ typedef enum
     CF_NUM_COMMANDS = 27,
 } CF_CMDS;
 
-/**\}*/
-
+/* Structure: CF_NoArgsCmd_t (24 bytes total) */
 /**
  * \defgroup cfscfcmdstructs CFS CFDP Command Structures
  * \{
@@ -992,10 +1091,19 @@ typedef enum
  *
  * For command details see #CF_NOOP_CC, #CF_ENABLE_ENGINE_CC, #CF_DISABLE_ENGINE_CC
  */
-typedef struct CF_NoArgsCmd
+typedef struct
 {
-    CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header */
-} CF_NoArgsCmd_t;
+   CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header
+                                                   \n[ 0] (20 bytes) */
+   uint32 crc_value;                   /**< \brief Message CRC/checksum
+                                                   \n[20] (4 bytes) */
+} CF_NoArgsCmd_t;                      /**< \brief Total size of 24 bytes */
+
+CompileTimeAssert((sizeof(CF_NoArgsCmd_t) % 4) == 0, 
+                  CF_NoArgsCmd_t_SIZE_NOT_MULTIPLE_OF_4);
+                  
+CompileTimeAssert(sizeof(CF_NoArgsCmd_t) == sizeof(CFE_MSG_CommandHeader_t) + 4,
+                  CF_NoArgsCmd_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Command payload argument union to support 4 uint8's, 2 uint16's or 1 uint32
@@ -1004,8 +1112,11 @@ typedef union CF_UnionArgs_Payload
 {
     uint32 dword;    /**< \brief Generic uint32 argument */
     uint16 hword[2]; /**< \brief Generic uint16 array of arguments */
-    uint8  byte[4];  /**< \brief Generic uint8 array of arguments */
+    uint8  byte[4];  /**< \brief Generic uint8 array of arguments; when union is not supported, this is the default */
 } CF_UnionArgs_Payload_t;
+
+CompileTimeAssert(sizeof(CF_UnionArgs_Payload_t) == 4,
+                  CF_UnionArgs_Payload_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Generic command structure with arguments supports common handling on multiple command types
@@ -1015,9 +1126,19 @@ typedef union CF_UnionArgs_Payload
  */
 typedef struct
 {
-    CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header */
-    CF_UnionArgs_Payload_t  data;       /**< \brief Generic command arguments */
-} CF_UnionArgsCmd_t;
+   CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header
+                                                   \n[ 0] (20 bytes) */
+   CF_UnionArgs_Payload_t data;        /**< \brief Command payload
+                                                   \n[20] (4 bytes) */
+   uint32 crc_value;                   /**< \brief Message CRC/checksum
+                                                   \n[24] (4 bytes) */
+} CF_UnionArgsCmd_t;                   /**< \brief Total size of 28 bytes */
+
+CompileTimeAssert((sizeof(CF_UnionArgsCmd_t) % 4) == 0, 
+                  CF_UnionArgsCmd_t_SIZE_NOT_MULTIPLE_OF_4);
+
+CompileTimeAssert(sizeof(CF_UnionArgsCmd_t) == sizeof(CFE_MSG_CommandHeader_t) + sizeof(CF_UnionArgs_Payload_t) + 4,
+                  CF_UnionArgsCmd_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief IDs for use for Reset cmd
@@ -1078,95 +1199,191 @@ typedef enum
  *
  * For command details see #CF_GET_MIB_PARAM_CC
  */
-typedef struct CF_GetParamCmd
+typedef struct
 {
-    CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header */
-    uint8                   key;        /**< \brief Parameter key, see #CF_GetSet_ValueID_t */
-    uint8                   chan_num;   /**< \brief Channel number */
-} CF_GetParamCmd_t;
+   CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header
+                                                   \n[ 0] (20 bytes)  */
+   uint8 key;                          /**< \brief Parameter key, see #CF_GetSet_ValueID_t
+                                                   \n[20] (1 byte)  */
+   uint8 chan_num;                     /**< \brief Channel number
+                                                   \n[21] (1 byte)  */
+   uint16 spare;                       /**< \brief For byte alignment
+                                                   \n[22] (2 bytes)  */
+   uint32 crc_value;                   /**< \brief Message CRC/checksum
+                                                   \n[24] (4 bytes) */
+} CF_GetParamCmd_t;                    /**< \brief Total size of 28 bytes */
+
+CompileTimeAssert((sizeof(CF_GetParamCmd_t) % 4) == 0, 
+                  CF_GetParamCmd_t_SIZE_NOT_MULTIPLE_OF_4);
+
+CompileTimeAssert(sizeof(CF_GetParamCmd_t) == sizeof(CFE_MSG_CommandHeader_t) + 8,
+                  CF_GetParamCmd_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Set parameter command structure
  *
  * For command details see #CF_SET_MIB_PARAM_CC
  */
-typedef struct CF_SetParamCmd
+typedef struct
 {
-    CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header */
-    uint32                  value;      /**< \brief Parameter value to set */
-    uint8                   key;        /**< \brief Parameter key, see #CF_GetSet_ValueID_t */
-    uint8                   chan_num;   /**< \brief Channel number */
-    uint8                   spare[2];   /**< \brief Alignment spare, uint32 multiple */
-} CF_SetParamCmd_t;
+   CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header
+                                                   \n[ 0] (20 bytes) */
+   uint32 value;                       /**< \brief Parameter value to set
+                                                   \n[20] (4 bytes)  */
+   uint8 key;                          /**< \brief Parameter key, see #CF_GetSet_ValueID_t
+                                                   \n[24] (1 byte) */
+   uint8 chan_num;                     /**< \brief Channel number
+                                                   \n[25] (1 byte) */
+   uint16 spare;                       /**< \brief For byte alignment
+                                                   \n[26] (2 bytes)  */
+   uint32 crc_value;                   /**< \brief Message CRC/checksum
+                                                   \n[28] (4 bytes) */
+} CF_SetParamCmd_t;                    /**< \brief Total size of 32 bytes */
+
+CompileTimeAssert((sizeof(CF_SetParamCmd_t) % 4) == 0, 
+                  CF_SetParamCmd_t_SIZE_NOT_MULTIPLE_OF_4);
+
+CompileTimeAssert(sizeof(CF_SetParamCmd_t) == sizeof(CFE_MSG_CommandHeader_t) + 12,
+                  CF_SetParamCmd_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Transmit file command structure
  *
  * For command details see #CF_TX_FILE_CC
  */
-typedef struct CF_TxFileCmd
+typedef struct
 {
-    CFE_MSG_CommandHeader_t cmd_header;                        /**< \brief Command header */
-    uint8                   cfdp_class;                        /**< \brief CFDP class: 0=class 1, 1=class 2 */
-    uint8                   keep;                              /**< \brief Keep file flag: 1=keep, else delete */
-    uint8                   chan_num;                          /**< \brief Channel number */
-    uint8                   priority;                          /**< \brief Priority: 0=highest priority */
-    CF_EntityId_t           dest_id;                           /**< \brief Destination entity id */
-    char                    src_filename[CF_FILENAME_MAX_LEN]; /**< \brief Source file/directory name */
-    char                    dst_filename[CF_FILENAME_MAX_LEN]; /**< \brief Destination file/directory name */
-} CF_TxFileCmd_t;
+   CFE_MSG_CommandHeader_t cmd_header;     /**< \brief Command header
+                                                       \n[  0] (20 bytes) */
+   uint8 cfdp_class;                       /**< \brief CFDP class: 0=class 1, 1=class 2
+                                                       \n[ 20] (1 byte) */
+   uint8 keep;                             /**< \brief Keep file flag: 1=keep, else delete
+                                                       \n[ 21] (1 byte) */
+   uint8 chan_num;                         /**< \brief Channel number
+                                                       \n[ 22] (1 byte) */
+   uint8 priority;                         /**< \brief Priority: 0=highest priority
+                                                       \n[ 23] (1 byte) */
+   uint32 dest_id;                         /**< \brief Destination entity id
+                                                       \n[ 24] (4 bytes) */
+   char src_filename[CF_FILENAME_MAX_LEN]; /**< \brief Source file/directory name
+                                                       \n[ 28] (CF_FILENAME_MAX_LEN x 1 byte) */
+   char dst_filename[CF_FILENAME_MAX_LEN]; /**< \brief Destination file/directory name
+                                                       \n[ 92] (CF_FILENAME_MAX_LEN x1  byte) */
+   uint32 crc_value;                       /**< \brief Message CRC/checksum
+                                                       \n[156] (4 bytes) */
+} CF_TxFileCmd_t;                          /**< \brief Total size of 160 bytes */
+
+CompileTimeAssert((sizeof(CF_TxFileCmd_t) % 4) == 0, 
+                  CF_TxFileCmd_t_SIZE_NOT_MULTIPLE_OF_4);
+
+CompileTimeAssert(sizeof(CF_TxFileCmd_t) == sizeof(CFE_MSG_CommandHeader_t) + (CF_FILENAME_MAX_LEN * 2) + 12,
+                  CF_TxFileCmd_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Write Queue command structure
  *
  * For command details see #CF_WRITE_QUEUE_CC
  */
-typedef struct CF_WriteQueueCmd
+typedef struct
 {
-    CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header */
-    uint8                   type;       /**< \brief Transaction direction: all=0, up=1, down=2 */
-    uint8                   chan;       /**< \brief Channel number */
-    uint8                   queue;      /**< \brief Queue type: 0=pending, 1=active, 2=history, 3=all */
-    uint8                   spare;      /**< \brief Alignment spare, puts filename on 32-bit boundary */
+   CFE_MSG_CommandHeader_t cmd_header;  /**< \brief Command header
+                                                    \n[ 0] (20 bytes) */
+   uint8 type;                          /**< \brief Transaction direction: all=0, up=1, down=2
+                                                    \n[20] (1 byte) */
+   uint8 chan;                          /**< \brief Channel number
+                                                    \n[21] (1 byte) */
+   uint8 queue;                         /**< \brief 0=pending, 1=active, 2=history, 3=all
+                                                    \n[22] (1 byte) */
+   uint8 spare;                         /**< \brief For byte alignment
+                                                    \n[23] (1 byte) */
+   char filename[CF_FILENAME_MAX_LEN];  /**< \brief Filename written to
+                                                    \n[24] (CF_FILENAME_MAX_LEN x 1 byte) */
+   uint32 crc_value;                    /**< \brief Message CRC/checksum
+                                                    \n[88] (4 bytes) */
+} CF_WriteQueueCmd_t;                   /**< \brief Total size of 92 bytes */
 
-    char filename[CF_FILENAME_MAX_LEN]; /**< \brief Filename written to */
-} CF_WriteQueueCmd_t;
+CompileTimeAssert((sizeof(CF_WriteQueueCmd_t) % 4) == 0, 
+                  CF_WriteQueueCmd_t_SIZE_NOT_MULTIPLE_OF_4);
 
-/**
- * \brief Playback directory command structure
- *
- * For command details see #CF_PLAYBACK_DIR_CC
- */
-typedef CF_TxFileCmd_t CF_PlaybackDirCmd_t;
+CompileTimeAssert(sizeof(CF_WriteQueueCmd_t) == sizeof(CFE_MSG_CommandHeader_t) + CF_FILENAME_MAX_LEN + 8,
+                  CF_WriteQueueCmd_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Transaction command structure
  *
  * For command details see #CF_SUSPEND_CC, #CF_RESUME_CC, #CF_CANCEL_CC, #CF_ABANDON_CC
  */
-typedef struct CF_TransactionCmd
+typedef struct
 {
-    CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header */
-    CF_TransactionSeq_t     ts;         /**< \brief Transaction sequence number */
-    CF_EntityId_t           eid;        /**< \brief Entity id */
-    uint8                   chan;       /**< \brief Channel number: 254=use ts, 255=all channels, else channel */
-    uint8                   spare[3];   /**< \brief Alignment spare for 32-bit multiple */
-} CF_TransactionCmd_t;
+   CFE_MSG_CommandHeader_t cmd_header; /**< \brief Command header
+                                                   \n[ 0] (20 bytes) */
+   uint32 ts;                          /**< \brief Transaction sequence number
+                                                   \n[20] (4 bytes) */
+   uint32 eid;                         /**< \brief Entity ID
+                                                   \n[24] (4 bytes) */
+   uint8 chan;                         /**< \brief If 254, use ts; if 255, all channels
+                                                   \n[28] (1 byte) */
+   uint8 spare[3];                     /**< \brief For byte alignment
+                                                   \n[29] (3 x 1 byte) */
+   uint32 crc_value;                   /**< \brief Message CRC/checksum
+                                                   \n[32] (4 bytes) */
+} CF_TransactionCmd_t;                 /**< \brief Total size of 36 bytes */
+
+CompileTimeAssert((sizeof(CF_TransactionCmd_t) % 4) == 0, 
+                  CF_TransactionCmd_t_SIZE_NOT_MULTIPLE_OF_4);
+
+CompileTimeAssert(sizeof(CF_TransactionCmd_t) == sizeof(CFE_MSG_CommandHeader_t) + 16,
+                  CF_TransactionCmd_t_NOT_BYTE_ALIGNED);
 
 /**
  * \brief Switch IP command structure
  *
  * For command details see #CF_SWITCH_IP_CC
  */
-typedef struct CF_SwitchIPCmd
+typedef struct
 {
-    CFE_MSG_CommandHeader_t cmd_header;                           /**< \brief Command header */
-    uint8                   chan_num;                             /**< \brief Channel number */
-    uint8                   padding;                              /**< \brief Padding */
-    uint16                  dst_port;                             /**< \brief Destination port */
-    char                    dst_hostname[CF_MAX_HOSTNAME_LENGTH]; /**< \brief Destination hostname */
-} CF_SwitchIPCmd_t;
+   CFE_MSG_CommandHeader_t cmd_header;        /**< \brief Command header
+                                                          [ 0] (20 bytes) */
+   uint8 chan_num;                            /**< \brief Channel number
+                                                          [20] (1 bytes) */
+   uint8 spare;                               /**< \brief For byte alignment
+                                                          [21] (1 bytes) */
+   uint16 dst_port;                           /**< \brief Destination port
+                                                          [22] (2 bytes) */
+   char dst_hostname[CF_MAX_HOSTNAME_LENGTH]; /**< \brief Destination hostname
+                                                          [24] (CF_MAX_HOSTNAME_LENGTH x 1 byte) */
+   uint32 crc_value;                          /**< \brief Message CRC/checksum
+                                                          [88] (4 bytes) */
+} CF_SwitchIPCmd_t;                           /**< \brief Total size of 92 bytes */
+
+CompileTimeAssert((sizeof(CF_SwitchIPCmd_t) % 4) == 0, 
+                  CF_SwitchIPCmd_t_SIZE_NOT_MULTIPLE_OF_4);
+                  
+CompileTimeAssert(sizeof(CF_SwitchIPCmd_t) == sizeof(CFE_MSG_CommandHeader_t) + CF_MAX_HOSTNAME_LENGTH + 8,
+                  CF_SwitchIPCmd_t_NOT_BYTE_ALIGNED);
+
+/**
+ * TypeDefs
+ */
+typedef CF_NoArgsCmd_t        CF_NoopCmd_t;
+typedef CF_UnionArgsCmd_t     CF_ResetCmd_t;
+typedef CF_TxFileCmd_t        CF_PlaybackDirCmd_t;
+typedef CF_UnionArgsCmd_t     CF_FreezeCmd_t;
+typedef CF_UnionArgsCmd_t     CF_ThawCmd_t;
+typedef CF_TransactionCmd_t   CF_SuspendCmd_t;
+typedef CF_TransactionCmd_t   CF_ResumeCmd_t;
+typedef CF_TransactionCmd_t   CF_CancelCmd_t;
+typedef CF_TransactionCmd_t   CF_AbandonCmd_t;
+typedef CF_NoArgsCmd_t        CF_SendCfgParamsCmd_t;
+typedef CF_UnionArgsCmd_t     CF_EnableDequeueCmd_t;
+typedef CF_UnionArgsCmd_t     CF_DisableDequeueCmd_t;
+typedef CF_UnionArgsCmd_t     CF_EnableDirPollingCmd_t;
+typedef CF_UnionArgsCmd_t     CF_DisableDirPollingCmd_t;
+typedef CF_NoArgsCmd_t        CF_DeleteQueueNodeCmd_t;
+typedef CF_NoArgsCmd_t        CF_EnableEngineCmd_t;
+typedef CF_NoArgsCmd_t        CF_DisableEngineCmd_t;
 
 /**\}*/
 
-#endif /* !CF_MSG_H */
+#endif /* CF_MSG_H */
+

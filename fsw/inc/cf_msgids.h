@@ -52,9 +52,11 @@
  * \{
  */
 
-#define CF_CMD_MID     (0x18B3) /**< \brief Message ID for commands */
-#define CF_SEND_HK_MID (0x18B4) /**< \brief Message ID to request housekeeping telemetry */
-#define CF_WAKE_UP_MID (0x18B5) /**< \brief Message ID for waking up the processing cycle */
+#define CF_CMD_MID           (0x18B3) /**< \brief Message ID for commands */
+#define CF_SEND_HK_MID       (0x18B4) /**< \brief Message ID to request housekeeping telemetry */
+#define CF_WAKE_UP_MID       (0x18B5) /**< \brief Message ID for waking up the processing cycle */
+#define CF_PDU_GND_CMD_MID   (0x18B6) /**< \brief Message ID for PDUs from ground */
+#define CF_PDU_OTHR_CMD_MID  (0x18B7) /**< \brief Message ID for PDUs from other sources */
 
 /**\}*/
 
@@ -63,8 +65,17 @@
  * \{
  */
 
-#define CF_HK_TLM_MID  (0x08B0) /**< \brief Message ID for housekeeping telemetry */
-#define CF_EOT_TLM_MID (0x08B3) /**< \brief Message ID for end of transaction telemetry */
+#define CF_HK_TLM_MID       (0x08B3) /**< \brief Message ID for housekeeping telemetry */
+#define CF_EOT_TLM_MID      (0x08B5) /**< \brief Message ID for end of transaction telemetry */
+
+/* Output playback PDU MIDs */
+#define CF_PLAYBACK_CH0_TLM_MID   (0x08B6) /**< \brief Message ID for PDUs sent by channel 0 */
+#define CF_PLAYBACK_CH1_TLM_MID   (0x08B7) /**< \brief Message ID for PDUs sent by channel 1 */
+#define CF_PLAYBACK_CH2_TLM_MID   (0x08B8) /**< \brief Message ID for PDUs sent by channel 2 */
+#define CF_PLAYBACK_CH3_TLM_MID   (0x08B9) /**< \brief Message ID for PDUs sent by channel 3 */
+#define CF_PLAYBACK_CH4_TLM_MID   (0x08BA) /**< \brief Message ID for PDUs sent by channel 4 */
+#define CF_PLAYBACK_CH5_TLM_MID   (0x08BB) /**< \brief Message ID for PDUs sent by channel 5 */
+#define CF_PLAYBACK_CH6_TLM_MID   (0x08BC) /**< \brief Message ID for PDUs sent by channel 6 */
 
 /**\}*/
 

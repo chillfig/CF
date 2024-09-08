@@ -51,9 +51,9 @@
 #include "cfe.h"
 
 #include "cf_msg.h"
-#include "cf_msgids.h"
+#include <cf_msgids.h>
 #include "cf_tbldefs.h"
-#include "cf_platform_cfg.h"
+#include <cf_platform_cfg.h>
 #include "cf_cfdp.h"
 #include "cf_clist.h"
 
