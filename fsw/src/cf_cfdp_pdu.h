@@ -62,7 +62,7 @@
 #define CF_CFDP_PDU_H
 
 #include "common_types.h"
-#include "cf_platform_cfg.h"
+#include <cf_platform_cfg.h>
 
 #include <stddef.h>
 

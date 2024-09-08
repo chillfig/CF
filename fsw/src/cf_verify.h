@@ -49,8 +49,8 @@
 #define CF_VERIFY_H
 
 #include "cfe.h"
-#include "cf_platform_cfg.h"
-#include "cf_perfids.h"
+#include <cf_platform_cfg.h>
+#include <cf_perfids.h>
 #include "cf_app.h"
 
 /* limit number of channels to a reasonable amount for special values for some commands */

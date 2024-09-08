@@ -55,7 +55,7 @@
 #include "cf_verify.h"
 #include "cf_app.h"
 #include "cf_events.h"
-#include "cf_perfids.h"
+#include <cf_perfids.h>
 #include "cf_cfdp_intf.h"
 #include "cf_utils.h"
 

@@ -55,7 +55,7 @@
 
 #include "common_types.h"
 #include "cf_cfdp_pdu.h"
-#include "cf_platform_cfg.h"
+#include <cf_platform_cfg.h>
 #include "cf_msg.h"
 #include "cf_clist.h"
 #include "cf_chunk.h"

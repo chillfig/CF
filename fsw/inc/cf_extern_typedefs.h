@@ -92,4 +92,7 @@ typedef struct CF_TxnFilenames
     char dst_filename[CF_FILENAME_MAX_LEN];
 } CF_TxnFilenames_t;
 
+CompileTimeAssert(sizeof(CF_TxnFilenames_t) == CF_FILENAME_MAX_LEN * 2,
+                  CF_TxnFilenames_t_NOT_BYTE_ALIGNED);
+
 #endif /* CF_EXTERN_TYPEDEFS_H */
