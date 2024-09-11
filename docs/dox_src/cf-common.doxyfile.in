@@ -7,3 +7,9 @@ INPUT      += @cf_MISSION_DIR@/docs/dox_src/cfs_cf.dox
 INPUT      += @cf_MISSION_DIR@/fsw
 
 IMAGE_PATH += @cf_MISSION_DIR@/docs/dox_src
+
+ALIASES               += cmd_mid="\brief"
+ALIASES               += tlm_mid="\brief"
+ALIASES               += cmd_code="\brief"
+ALIASES               += msg_struct="\brief"
+ALIASES               += export_control="\brief"
