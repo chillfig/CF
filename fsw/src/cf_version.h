@@ -54,11 +54,11 @@
  * \{
  */
 
-#define CF_MAJOR_VERSION (3)  /**< \brief Major version number */
-#define CF_MINOR_VERSION (0)  /**< \brief Minor version number */
-#define CF_REVISION      (99) /**< \brief Revision number */
+#define CF_MAJOR_VERSION (25)  /**< \brief Major version number */
+#define CF_MINOR_VERSION (0)   /**< \brief Minor version number */
+#define CF_REVISION      (0)   /**< \brief Revision number */
 
-#define CF_CODENAME "gw_draco_v2.2" /**< \brief parent bundle for this version */
+#define CF_CODENAME "(gw_draco_v2.3)" /**< \brief parent bundle for this version */
 
 /**\}*/
 

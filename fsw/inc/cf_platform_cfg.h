@@ -448,7 +448,7 @@ typedef uint32 CF_TransactionSeq_t;
  *       Must be defined as a numeric value that is greater than or equal to zero.
  *       1 is a Recommended default value determined by Gateway L2 FSW group.
  */
-#define CF_MISSION_REV 1
+#define CF_MISSION_REV 0
 
 /**\}*/
 
