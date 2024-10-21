@@ -19,8 +19,6 @@
 #*****************************************************************************************************************
 project(CFS_CF C)
 
-include_directories(${CFS_IO_LIB_MISSION_DIR}/fsw/public_inc)
-
 set(APP_SRC_FILES
   fsw/src/cf_app.c
   fsw/src/cf_cfdp.c
