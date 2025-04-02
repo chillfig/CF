@@ -1694,6 +1694,17 @@
  */
 #define CF_EID_INF_CMD_OPENCLOSE (189)
 
+/**
+ * \brief CF Move Path Length Verification Too Long Event ID
+ *
+ *  \par Type: ERROR
+ *
+ *  \par Cause:
+ *
+ *  Combined move filename length exceeds buffer size
+ */
+#define CF_EID_ERR_CFDP_INVALID_MOVE_LEN (190)
+
 /**\}*/
 
 #endif /* !CF_EVENTS_H */

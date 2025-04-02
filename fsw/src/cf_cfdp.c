@@ -1615,8 +1615,10 @@ void CF_CFDP_ResetTransaction(CF_Transaction_t *t, int keep_history)
     osal_status_t status = OS_ERROR;
     CF_Channel_t *c      = &CF_AppData.engine.channels[t->chan_num];
     CF_Assert(t->chan_num < CF_NUM_CHANNELS);
+    size_t move_dir_len;
+    size_t filename_len;
 
-    if ( t->flags.com.q_index == CF_QueueIdx_FREE)
+    if (t->flags.com.q_index == CF_QueueIdx_FREE)
     {
         CFE_EVS_SendEvent(CF_EID_DBG_RESET_FREED_XACT, CFE_EVS_EventType_DEBUG,
                           "CF: attempt to reset a transaction that has already been freed");
@@ -1640,9 +1642,26 @@ void CF_CFDP_ResetTransaction(CF_Transaction_t *t, int keep_history)
                     filename = strrchr(t->history->fnames.src_filename, '/');
                     if (filename != NULL)
                     {
-                        snprintf(destination, sizeof(destination), "%s%s",
-                                 CF_AppData.config_table->chan[t->chan_num].move_dir, filename);
-                        status = OS_mv(t->history->fnames.src_filename, destination);
+                        /*
+                         * filename and move_dir are both OS_MAX_PATH_LEN, destination is OS_MAX_PATH_LEN,
+                         * so check if both components fit in destination buffer
+                         */
+                        move_dir_len = OS_strnlen(CF_AppData.config_table->chan[t->chan_num].move_dir, OS_MAX_PATH_LEN);
+                        filename_len = OS_strnlen(filename, OS_MAX_PATH_LEN);
+                        if ((move_dir_len + filename_len) >= sizeof(destination))
+                        {
+                            /* Send command failure event (error) - the path would be truncated */
+                            CFE_EVS_SendEvent(
+                                CF_EID_ERR_CFDP_INVALID_MOVE_LEN, CFE_EVS_EventType_ERROR,
+                                "CF: combined move directory and filename too long: move dir = %s, filename = %s",
+                                CF_AppData.config_table->chan[t->chan_num].move_dir, filename);
+                        }
+                        else
+                        {
+                            snprintf(destination, sizeof(destination), "%s%s",
+                                     CF_AppData.config_table->chan[t->chan_num].move_dir, filename);
+                            status = OS_mv(t->history->fnames.src_filename, destination);
+                        }
                     }
                 }
 
