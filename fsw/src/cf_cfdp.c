@@ -1652,9 +1652,9 @@ void CF_CFDP_ResetTransaction(CF_Transaction_t *t, int keep_history)
                         {
                             /* Send command failure event (error) - the path would be truncated */
                             CFE_EVS_SendEvent(
-                                CF_EID_ERR_CFDP_INVALID_MOVE_LEN, CFE_EVS_EventType_ERROR,
-                                "CF: combined move directory and filename too long: move dir = %s, filename = %s",
-                                CF_AppData.config_table->chan[t->chan_num].move_dir, filename);
+                                CF_EID_ERR_CFDP_BUF_EXCEED, CFE_EVS_EventType_ERROR,
+                                "CF: move dir len = %zu, filename len = %zu, exceeds dest buf len = %zu",
+                                move_dir_len, filename_len, sizeof(destination));
                         }
                         else
                         {

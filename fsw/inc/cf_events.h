@@ -1703,7 +1703,7 @@
  *
  *  Combined move filename length exceeds buffer size
  */
-#define CF_EID_ERR_CFDP_INVALID_MOVE_LEN (190)
+#define CF_EID_ERR_CFDP_BUF_EXCEED (190)
 
 /**\}*/
 

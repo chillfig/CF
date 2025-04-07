@@ -1469,7 +1469,7 @@ void Test_CF_CFDP_ResetTransaction(void)
     UT_SetDefaultReturnValue(UT_KEY(OS_strnlen), OS_MAX_PATH_LEN);
     UT_SetDeferredRetcode(UT_KEY(OS_strnlen), 2, OS_MAX_PATH_LEN);
     UtAssert_VOIDCALL(CF_CFDP_ResetTransaction(t, 0));
-    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UT_CF_AssertEventID(CF_EID_ERR_CFDP_BUF_EXCEED);
 
     UT_ResetState(UT_KEY(CF_FreeTransaction));
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, NULL, NULL, &h, &t, NULL);
