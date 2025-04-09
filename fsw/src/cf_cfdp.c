@@ -1615,8 +1615,7 @@ void CF_CFDP_ResetTransaction(CF_Transaction_t *t, int keep_history)
     osal_status_t status = OS_ERROR;
     CF_Channel_t *c      = &CF_AppData.engine.channels[t->chan_num];
     CF_Assert(t->chan_num < CF_NUM_CHANNELS);
-    size_t move_dir_len;
-    size_t filename_len;
+    uint32 dest_path_len;
 
     if (t->flags.com.q_index == CF_QueueIdx_FREE)
     {
@@ -1642,26 +1641,19 @@ void CF_CFDP_ResetTransaction(CF_Transaction_t *t, int keep_history)
                     filename = strrchr(t->history->fnames.src_filename, '/');
                     if (filename != NULL)
                     {
-                        /*
-                         * filename and move_dir are both OS_MAX_PATH_LEN, destination is OS_MAX_PATH_LEN,
-                         * so check if both components fit in destination buffer
-                         */
-                        move_dir_len = OS_strnlen(CF_AppData.config_table->chan[t->chan_num].move_dir, OS_MAX_PATH_LEN);
-                        filename_len = OS_strnlen(filename, OS_MAX_PATH_LEN);
-                        if ((move_dir_len + filename_len) >= sizeof(destination))
+                        /* Use snprintf() to safely create destination path and detect truncation */
+                        dest_path_len = snprintf((char *)destination, sizeof(destination), "%s%s",
+                                                 CF_AppData.config_table->chan[t->chan_num].move_dir, filename);
+                        if (dest_path_len >= (int)sizeof(destination))
                         {
+                            /* Mark character before zero terminator to indicate truncation */
+                            destination[sizeof(destination) - 2] = CF_FILENAME_TRUNCATED;
+
                             /* Send command failure event (error) - the path would be truncated */
-                            CFE_EVS_SendEvent(
-                                CF_EID_ERR_CFDP_BUF_EXCEED, CFE_EVS_EventType_ERROR,
-                                "CF: move dir len = %zu, filename len = %zu, exceeds dest buf len = %zu",
-                                move_dir_len, filename_len, sizeof(destination));
+                            CFE_EVS_SendEvent(CF_EID_ERR_CFDP_BUF_EXCEED, CFE_EVS_EventType_ERROR,
+                                              "CF: destination has been truncated to %s", destination);
                         }
-                        else
-                        {
-                            snprintf(destination, sizeof(destination), "%s%s",
-                                     CF_AppData.config_table->chan[t->chan_num].move_dir, filename);
-                            status = OS_mv(t->history->fnames.src_filename, destination);
-                        }
+                        status = OS_mv(t->history->fnames.src_filename, destination);
                     }
                 }
 

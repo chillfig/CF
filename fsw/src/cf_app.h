@@ -97,6 +97,8 @@
  */
 #define CF_CHANNEL_PIPE_PREFIX ("CF_CHAN_")
 
+#define CF_FILENAME_TRUNCATED '$'
+
 /*************************************************************************
  **
  ** Type definitions

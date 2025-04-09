@@ -1466,10 +1466,15 @@ void Test_CF_CFDP_ResetTransaction(void)
     UtAssert_STUB_COUNT(OS_remove, 1);
 
     /* Move path length failure */
-    UT_SetDefaultReturnValue(UT_KEY(OS_strnlen), OS_MAX_PATH_LEN);
-    UT_SetDeferredRetcode(UT_KEY(OS_strnlen), 2, OS_MAX_PATH_LEN);
+    memset(t->history->fnames.src_filename, 'X', sizeof(t->history->fnames.src_filename) - 1);
+    t->history->fnames.src_filename[0] = '/';
+    t->history->fnames.src_filename[sizeof(t->history->fnames.src_filename) - 1] = '\0';
+    memset(CF_AppData.config_table->chan[t->chan_num].move_dir, 'Y', sizeof(CF_AppData.config_table->chan[t->chan_num].move_dir) - 1);
+    CF_AppData.config_table->chan[t->chan_num].move_dir[sizeof(CF_AppData.config_table->chan[t->chan_num].move_dir) - 1] = '\0';
     UtAssert_VOIDCALL(CF_CFDP_ResetTransaction(t, 0));
     UT_CF_AssertEventID(CF_EID_ERR_CFDP_BUF_EXCEED);
+    memset(t->history->fnames.src_filename, 0, sizeof(t->history->fnames.src_filename));
+    memset(CF_AppData.config_table->chan[t->chan_num].move_dir, 0, sizeof(CF_AppData.config_table->chan[t->chan_num].move_dir));
 
     UT_ResetState(UT_KEY(CF_FreeTransaction));
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, NULL, NULL, &h, &t, NULL);
