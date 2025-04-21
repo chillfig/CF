@@ -1,0 +1,34 @@
+name: Auto-Assign cFS Reviewers
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  assign-cfs-reviewers:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Fetch all members of nasa’s “cfs” team
+      - name: Get cfs team members
+        id: fetch_team
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const members = await github.paginate(
+              github.rest.teams.listMembersInOrg,
+              {
+                org: "nasa",
+                team_slug: "cfs",
+                per_page: 100
+              }
+            );
+            const logins = members.map(m => m.login);
+            core.setOutput("logins", logins.join(","));
+
+      # 2. Request each person individually
+      - name: Request reviews from all cfs members
+        uses: peter-evans/request-review@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          reviewers: ${{ steps.fetch_team.outputs.logins }}
