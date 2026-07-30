@@ -230,7 +230,7 @@ void CF_CList_Traverse_R(CF_CListNode_t *end, CF_CListFn_t fn, void *context)
     {
         CF_CListNode_t *node = end->prev;
         CF_CListNode_t *node_next;
-        bool             last = false;
+        bool            last = false;
 
         if (node)
         {

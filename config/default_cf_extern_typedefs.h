@@ -23,33 +23,11 @@
  * Declarations and prototypes for cf_extern_typedefs module
  */
 
-#ifndef CF_EXTERN_TYPEDEFS_H
-#define CF_EXTERN_TYPEDEFS_H
+#ifndef DEFAULT_CF_EXTERN_TYPEDEFS_H
+#define DEFAULT_CF_EXTERN_TYPEDEFS_H
 
 /* constants such as CF_FILENAME_MAX_LEN are in mission_cfg.h */
 #include "cf_mission_cfg.h"
-
-#ifdef CFE_EDS_ENABLED_BUILD
-
-#include "cf_eds_typedefs.h"
-
-typedef CF_QueueIdx_Enum_t CF_QueueIdx_t;
-#define CF_QueueIdx_NUM       (1 + EdsDataType_CF_QueueIdx_t_MAX)
-#define CF_GetSet_ValueID_MAX (1 + EdsDataType_CF_GetSet_ValueID_t_MAX)
-
-typedef CF_EntityId_Atom_t       CF_EntityId_t;
-typedef CF_TransactionSeq_Atom_t CF_TransactionSeq_t;
-
-typedef CF_CFDP_Enum_t           CF_CFDP_Class_t;
-typedef CF_GetSet_ValueID_Enum_t CF_GetSet_ValueID_t;
-
-typedef EdsDataType_BASE_TYPES_PathName_t CF_PathName_t;
-typedef EdsDataType_BASE_TYPES_FileName_t CF_FileName_t;
-
-#define CF_FILENAME_MAX_NAME ((int)sizeof(CF_FileName_t))
-#define CF_FILENAME_MAX_LEN  ((int)sizeof(CF_PathName_t))
-
-#else
 
 /**
  * @brief Values for CFDP file transfer class
@@ -71,14 +49,13 @@ typedef enum
  */
 typedef enum
 {
-    CF_QueueIdx_PEND      = 0, /**< \brief first one on this list is active */
-    CF_QueueIdx_TXA       = 1,
-    CF_QueueIdx_TXW       = 2,
-    CF_QueueIdx_RX        = 3,
-    CF_QueueIdx_HIST      = 4,
-    CF_QueueIdx_HIST_FREE = 5,
-    CF_QueueIdx_FREE      = 6,
-    CF_QueueIdx_NUM       = 7,
+    CF_QueueIdx_PEND      = 0, /**< \brief tx transactions that have not started */
+    CF_QueueIdx_TX        = 1, /**< \brief tx transactions in progress */
+    CF_QueueIdx_RX        = 2, /**< \brief rx transactions in progress */
+    CF_QueueIdx_HIST      = 3, /**< \brief transaction history (completed) */
+    CF_QueueIdx_HIST_FREE = 4, /**< \brief unused transaction history structs */
+    CF_QueueIdx_FREE      = 5, /**< \brief unused transaction structs */
+    CF_QueueIdx_NUM       = 6
 } CF_QueueIdx_t;
 
 /**
@@ -134,7 +111,5 @@ typedef uint32 CF_EntityId_t;
  *         Must be one of uint8, uint16, uint32, uint64.
  */
 typedef uint32 CF_TransactionSeq_t;
-
-#endif
 
 #endif /* CF_EXTERN_TYPEDEFS_H */

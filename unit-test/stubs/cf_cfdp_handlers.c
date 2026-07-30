@@ -32,7 +32,7 @@
 #include "cfe.h"
 #include "cf_verify.h"
 #include "cf_app.h"
-#include "cf_events.h"
+#include "cf_eventids.h"
 #include "cf_perfids.h"
 #include "cf_cfdp.h"
 #include "cf_utils.h"
@@ -70,7 +70,7 @@ void UT_DefaultHandler_CF_CFDP_ConstructPduHeader(void *UserObj, UT_EntryKey_t F
 void UT_DefaultHandler_CF_CFDP_TxFile(void *UserObj, UT_EntryKey_t FuncKey, const UT_StubContext_t *Context)
 {
     CF_CFDP_TxFile_context_t *ctxt = UT_CF_GetContextBuffer(FuncKey, CF_CFDP_TxFile_context_t);
-    const char *              ptr;
+    const char               *ptr;
 
     if (ctxt)
     {
@@ -95,7 +95,7 @@ void UT_DefaultHandler_CF_CFDP_TxFile(void *UserObj, UT_EntryKey_t FuncKey, cons
 void UT_DefaultHandler_CF_CFDP_PlaybackDir(void *UserObj, UT_EntryKey_t FuncKey, const UT_StubContext_t *Context)
 {
     CF_CFDP_PlaybackDir_context_t *ctxt = UT_CF_GetContextBuffer(FuncKey, CF_CFDP_PlaybackDir_context_t);
-    const char *                   ptr;
+    const char                    *ptr;
 
     if (ctxt)
     {

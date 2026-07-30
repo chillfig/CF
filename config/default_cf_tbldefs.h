@@ -28,8 +28,8 @@
  *   STRUCTURE DEFINITIONS IN THIS FILE!
  *   ADD THEM TO cf_tbl.h IF NEEDED!
  */
-#ifndef CF_TBLDEFS_H
-#define CF_TBLDEFS_H
+#ifndef DEFAULT_CF_TBLDEFS_H
+#define DEFAULT_CF_TBLDEFS_H
 
 #include "cf_mission_cfg.h"
 #include "cf_extern_typedefs.h"
@@ -77,7 +77,6 @@ typedef struct CF_ChannelConfig
     uint8 dequeue_enabled;           /**< \brief if 1, then the channel will make pending transactions active */
     char  move_dir[OS_MAX_PATH_LEN]; /**< \brief Move directory if not empty */
 } CF_ChannelConfig_t;
-
 
 /*
  * Previously, the entire definition of the CF table was in this file, now it is split.

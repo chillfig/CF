@@ -40,7 +40,7 @@
 #include "cfe.h"
 #include "cf_verify.h"
 #include "cf_app.h"
-#include "cf_events.h"
+#include "cf_eventids.h"
 #include "cf_perfids.h"
 #include "cf_cfdp.h"
 #include "cf_utils.h"
@@ -61,7 +61,7 @@
 CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *txn, bool silent)
 {
     /* if channel is frozen, do not take message */
-    CF_Channel_t *          chan    = CF_AppData.engine.channels + txn->chan_num;
+    CF_Channel_t           *chan    = CF_AppData.engine.channels + txn->chan_num;
     bool                    success = true;
     CF_Logical_PduBuffer_t *ret;
     int32                   os_status;
@@ -76,13 +76,11 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *txn, bool sile
         CF_AppData.engine.out.msg = NULL;
     }
 
-    if (CF_AppData.config_table->chan[txn->chan_num].max_outgoing_messages_per_wakeup &&
-        (CF_AppData.engine.outgoing_counter ==
-         CF_AppData.config_table->chan[txn->chan_num].max_outgoing_messages_per_wakeup))
+    if (CF_AppData.config_table->chan[txn->chan_num].max_outgoing_messages_per_wakeup
+        && (chan->outgoing_counter >= CF_AppData.config_table->chan[txn->chan_num].max_outgoing_messages_per_wakeup))
     {
         /* no more messages this wakeup allowed */
-        chan->cur = txn; /* remember where we were for next time */
-        success   = false;
+        success = false;
     }
 
     if (success && !CF_AppData.hk.Payload.channel_hk[txn->chan_num].frozen && !txn->flags.com.suspended)
@@ -100,16 +98,16 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *txn, bool sile
         /* Allocate message buffer on success */
         if (os_status == OS_SUCCESS)
         {
-            CF_AppData.engine.out.msg = CFE_SB_AllocateMessageBuffer(offsetof(CF_PduTlmMsg_t, ph) + CF_MAX_PDU_SIZE +
-                                                                     CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES);
+            CF_AppData.engine.out.msg = CFE_SB_AllocateMessageBuffer(offsetof(CF_PduTlmMsg_t, ph) + CF_MAX_PDU_SIZE
+                                                                     + CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES);
         }
 
         if (!CF_AppData.engine.out.msg)
         {
-            chan->cur = txn; /* remember where we were for next time */
             if (!silent && (os_status == OS_SUCCESS))
             {
-                CFE_EVS_SendEvent(CF_CFDP_NO_MSG_ERR_EID, CFE_EVS_EventType_ERROR,
+                CFE_EVS_SendEvent(CF_CFDP_NO_MSG_ERR_EID,
+                                  CFE_EVS_EventType_ERROR,
                                   "CF: no output message buffer available");
             }
             success = false;
@@ -120,7 +118,7 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *txn, bool sile
             CFE_MSG_Init(&CF_AppData.engine.out.msg->Msg,
                          CFE_SB_ValueToMsgId(CF_AppData.config_table->chan[txn->chan_num].mid_output),
                          offsetof(CF_PduTlmMsg_t, ph));
-            ++CF_AppData.engine.outgoing_counter; /* even if max_outgoing_messages_per_wakeup is 0 (unlimited), it's ok
+            ++chan->outgoing_counter; /* even if max_outgoing_messages_per_wakeup is 0 (unlimited), it's ok
                                                     to inc this */
 
             /* prepare for encoding - the "tx_pdudata" is what serves as the temporary holding area for content */
@@ -128,10 +126,20 @@ CF_Logical_PduBuffer_t *CF_CFDP_MsgOutGet(const CF_Transaction_t *txn, bool sile
         }
     }
 
-    /* if returning a buffer, then reset the encoder state to point to the beginning of the encapsulation msg */
-    if (success && ret != NULL)
+    /* If returning NULL, this only happens when we hit some traffic limit for this channel,
+     * either the limit of tx per wakeup, the sync sem is unavailable, or the SB pool is empty. */
+    if (ret == NULL)
     {
-        CF_CFDP_EncodeStart(&CF_AppData.engine.out.encode, CF_AppData.engine.out.msg, ret, offsetof(CF_PduTlmMsg_t, ph),
+        /* stop trying to send anything until next wake up */
+        chan->tx_blocked = true;
+    }
+    else
+    {
+        /* if returning a buffer, then reset the encoder state to point to the beginning of the encapsulation msg */
+        CF_CFDP_EncodeStart(&CF_AppData.engine.out.encode,
+                            CF_AppData.engine.out.msg,
+                            ret,
+                            offsetof(CF_PduTlmMsg_t, ph),
                             offsetof(CF_PduTlmMsg_t, ph) + CF_MAX_PDU_SIZE);
     }
 
@@ -152,7 +160,7 @@ void CF_CFDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
 
     /* now handle the SB encapsulation - this should reflect the
      * length of the entire message, including encapsulation */
-    sb_msgsize = offsetof(CF_PduTlmMsg_t, ph);
+    sb_msgsize  = offsetof(CF_PduTlmMsg_t, ph);
     sb_msgsize += ph->pdu_header.header_encoded_length;
     sb_msgsize += ph->pdu_header.data_encoded_length;
     sb_msgsize += CF_PDU_ENCAPSULATION_EXTRA_TRAILING_BYTES;
@@ -174,16 +182,14 @@ void CF_CFDP_Send(uint8 chan_num, const CF_Logical_PduBuffer_t *ph)
  *-----------------------------------------------------------------*/
 void CF_CFDP_ReceiveMessage(CF_Channel_t *chan)
 {
-    CF_Transaction_t *txn; /* initialized below */
-    uint32            count = 0;
-    int32             status;
-    const int         chan_num = (chan - CF_AppData.engine.channels);
-    CFE_SB_Buffer_t * bufptr;
-    CFE_MSG_Size_t    msg_size;
-    CFE_MSG_Type_t    msg_type = CFE_MSG_Type_Invalid;
+    uint32           count = 0;
+    int32            status;
+    const int        chan_num = (chan - CF_AppData.engine.channels);
+    CFE_SB_Buffer_t *bufptr;
+    CFE_MSG_Size_t   msg_size;
+    CFE_MSG_Type_t   msg_type = CFE_MSG_Type_Invalid;
 
     CF_Logical_PduBuffer_t *ph;
-    CF_Transaction_t        t_finack;
 
     for (; count < CF_AppData.config_table->chan[chan_num].rx_max_messages_per_wakeup; ++count)
     {
@@ -215,88 +221,9 @@ void CF_CFDP_ReceiveMessage(CF_Channel_t *chan)
         {
             CF_CFDP_DecodeStart(&CF_AppData.engine.in.decode, bufptr, ph, offsetof(CF_PduCmdMsg_t, ph), msg_size);
         }
-        if (!CF_CFDP_RecvPh(chan_num, ph))
-        {
-            /* got a valid PDU -- look it up by sequence number */
-            txn = CF_FindTransactionBySequenceNumber(chan, ph->pdu_header.sequence_num, ph->pdu_header.source_eid);
-            if (txn)
-            {
-                /* found one! Send it to the transaction state processor */
-                CF_Assert(txn->state > CF_TxnState_IDLE);
-                CF_CFDP_DispatchRecv(txn, ph);
-            }
-            else
-            {
-                /* didn't find a match, but there's a special case:
-                 *
-                 * If an R2 sent FIN-ACK, the transaction is freed and the history data
-                 * is placed in the history queue. It's possible that the peer missed the
-                 * FIN-ACK and is sending another FIN. Since we don't know about this
-                 * transaction, we don't want to leave R2 hanging. That wouldn't be elegant.
-                 * So, send a FIN-ACK by cobbling together a temporary transaction on the
-                 * stack and calling CF_CFDP_SendAck() */
-                if (ph->pdu_header.source_eid == CF_AppData.config_table->local_eid &&
-                    ph->fdirective.directive_code == CF_CFDP_FileDirective_FIN)
-                {
-                    if (!CF_CFDP_RecvFin(txn, ph))
-                    {
-                        memset(&t_finack, 0, sizeof(t_finack));
-                        CF_CFDP_InitTxnTxFile(&t_finack, CF_CFDP_CLASS_2, 1, chan_num,
-                                              0); /* populate transaction with needed fields for CF_CFDP_SendAck() */
-                        if (CF_CFDP_SendAck(&t_finack, CF_CFDP_AckTxnStatus_UNRECOGNIZED, CF_CFDP_FileDirective_FIN,
-                                            ph->int_header.fin.cc, ph->pdu_header.destination_eid,
-                                            ph->pdu_header.sequence_num) != CF_SEND_PDU_NO_BUF_AVAIL_ERROR)
-                        {
-                            /* CF_CFDP_SendAck does not return CF_SEND_PDU_ERROR */
-                            chan->cur = NULL; /* do not remember temp transaction for next time */
-                        }
 
-                        /* NOTE: recv and recv_spurious will both be incremented */
-                        ++CF_AppData.hk.Payload.channel_hk[chan_num].counters.recv.spurious;
-                    }
-
-                    CFE_ES_PerfLogExit(CF_PERF_ID_PDURCVD(chan_num));
-                    continue;
-                }
-
-                /* if no match found, then it must be the case that we would be the destination entity id, so verify it
-                 */
-                if (ph->pdu_header.destination_eid == CF_AppData.config_table->local_eid)
-                {
-                    /* we didn't find a match, so assign it to a transaction */
-                    if (CF_AppData.hk.Payload.channel_hk[chan_num].q_size[CF_QueueIdx_RX] == CF_MAX_SIMULTANEOUS_RX)
-                    {
-                        CFE_EVS_SendEvent(
-                            CF_CFDP_RX_DROPPED_ERR_EID, CFE_EVS_EventType_ERROR,
-                            "CF: dropping packet from %lu transaction number 0x%08lx due max RX transactions reached",
-                            (unsigned long)ph->pdu_header.source_eid, (unsigned long)ph->pdu_header.sequence_num);
-
-                        /* NOTE: as there is no transaction (txn) associated with this, there is no known channel,
-                            and therefore no known counter to account it to (because dropped is per-chan) */
-                    }
-                    else
-                    {
-                        txn = CF_FindUnusedTransaction(chan);
-                        CF_Assert(txn);
-                        txn->history->dir = CF_Direction_RX;
-
-                        /* set default FIN status */
-                        txn->state_data.receive.r2.dc = CF_CFDP_FinDeliveryCode_INCOMPLETE;
-                        txn->state_data.receive.r2.fs = CF_CFDP_FinFileStatus_DISCARDED;
-
-                        txn->flags.com.q_index = CF_QueueIdx_RX;
-                        CF_CList_InsertBack_Ex(chan, txn->flags.com.q_index, &txn->cl_node);
-                        CF_CFDP_DispatchRecv(txn, ph); /* will enter idle state */
-                    }
-                }
-                else
-                {
-                    CFE_EVS_SendEvent(CF_CFDP_INVALID_DST_ERR_EID, CFE_EVS_EventType_ERROR,
-                                      "CF: dropping packet for invalid destination eid 0x%lx",
-                                      (unsigned long)ph->pdu_header.destination_eid);
-                }
-            }
-        }
+        /* Identify and dispatch this PDU */
+        CF_CFDP_ReceivePdu(chan, ph);
 
         CFE_ES_PerfLogExit(CF_PERF_ID_PDURCVD(chan_num));
     }

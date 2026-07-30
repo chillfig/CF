@@ -25,8 +25,8 @@
  *   Constants and enumerated types related to these table structures
  *   are defined in cf_tbldefs.h.
  */
-#ifndef CF_TBL_H
-#define CF_TBL_H
+#ifndef DEFAULT_CF_TBL_H
+#define DEFAULT_CF_TBL_H
 
 #include "cf_mission_cfg.h"
 #include "cf_tbldefs.h"

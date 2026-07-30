@@ -1,5 +1,5 @@
 #include "cf_app.h"
-#include "cf_events.h"
+#include "cf_eventids.h"
 #include "cf_dispatch.h"
 #include "cf_cmd.h"
 
@@ -8,7 +8,7 @@
 
 #include "cfe_msg.h"
 
-static const EdsDispatchTable_CF_Application_CFE_SB_Telecommand_t CF_TC_DISPATCH_TABLE = {
+static const EdsDispatchTable_EdsComponent_CF_Application_CFE_SB_Telecommand_t CF_TC_DISPATCH_TABLE = {
     .CMD =
         {
 
@@ -48,7 +48,7 @@ void CF_AppPipe(const CFE_SB_Buffer_t *BufPtr)
     CFE_MSG_Size_t    MsgSize;
     CFE_MSG_FcnCode_t MsgFc;
 
-    status = EdsDispatch_CF_Application_Telecommand(BufPtr, &CF_TC_DISPATCH_TABLE);
+    status = EdsDispatch_EdsComponent_CF_Application_Telecommand(BufPtr, &CF_TC_DISPATCH_TABLE);
 
     if (status != CFE_SUCCESS)
     {
@@ -57,22 +57,31 @@ void CF_AppPipe(const CFE_SB_Buffer_t *BufPtr)
 
         if (status == CFE_STATUS_UNKNOWN_MSG_ID)
         {
-            CFE_EVS_SendEvent(CF_MID_ERR_EID, CFE_EVS_EventType_ERROR, "L%d TO: Invalid Msg ID Rcvd 0x%x status=0x%08x",
-                              __LINE__, (unsigned int)CFE_SB_MsgIdToValue(MsgId), (unsigned int)status);
+            CFE_EVS_SendEvent(CF_MID_ERR_EID,
+                              CFE_EVS_EventType_ERROR,
+                              "L%d TO: Invalid Msg ID Rcvd 0x%x status=0x%08x",
+                              __LINE__,
+                              (unsigned int)CFE_SB_MsgIdToValue(MsgId),
+                              (unsigned int)status);
         }
         else if (status == CFE_STATUS_WRONG_MSG_LENGTH)
         {
             CFE_MSG_GetSize(&BufPtr->Msg, &MsgSize);
             CFE_MSG_GetFcnCode(&BufPtr->Msg, &MsgFc);
-            CFE_EVS_SendEvent(CF_CMD_LEN_ERR_EID, CFE_EVS_EventType_ERROR,
+            CFE_EVS_SendEvent(CF_CMD_LEN_ERR_EID,
+                              CFE_EVS_EventType_ERROR,
                               "Invalid length for command: ID = 0x%X, CC = %d, length = %u",
-                              (unsigned int)CFE_SB_MsgIdToValue(MsgId), (int)MsgFc, (unsigned int)MsgSize);
+                              (unsigned int)CFE_SB_MsgIdToValue(MsgId),
+                              (int)MsgFc,
+                              (unsigned int)MsgSize);
         }
         else
         {
             CFE_MSG_GetFcnCode(&BufPtr->Msg, &MsgFc);
-            CFE_EVS_SendEvent(CF_CC_ERR_EID, CFE_EVS_EventType_ERROR,
-                              "L%d TO: Invalid Function Code Rcvd In Ground Command 0x%x", __LINE__,
+            CFE_EVS_SendEvent(CF_CC_ERR_EID,
+                              CFE_EVS_EventType_ERROR,
+                              "L%d TO: Invalid Function Code Rcvd In Ground Command 0x%x",
+                              __LINE__,
                               (unsigned int)MsgFc);
         }
     }

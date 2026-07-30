@@ -20,7 +20,7 @@
 /* cf testing includes */
 #include "cf_test_utils.h"
 #include "cf_test_alt_handler.h"
-#include "cf_events.h"
+#include "cf_eventids.h"
 #include "cf_cfdp_sbintf.h"
 #include "cf_cfdp_pdu.h"
 
@@ -48,7 +48,7 @@ static void UT_CFDP_SetupBasicRxState(CF_Logical_PduBuffer_t *pdu_buffer)
 {
     static CF_DecoderState_t ut_decoder;
     static uint8             bytes[CF_CFDP_MAX_HEADER_SIZE];
-    CFE_SB_Buffer_t *        bufptr;
+    CFE_SB_Buffer_t         *bufptr;
     CFE_MSG_Size_t           sz;
     CFE_MSG_Type_t           msg_type = CFE_MSG_Type_Cmd;
 
@@ -71,7 +71,7 @@ static void UT_CFDP_SetupBasicRxState(CF_Logical_PduBuffer_t *pdu_buffer)
     UT_SetDataBuffer(UT_KEY(CFE_MSG_GetSize), &sz, sizeof(sz), true);
 
     /* setup for a potential call to CFE_MSG_GetType() */
-    UT_SetDataBuffer(UT_KEY(CFE_MSG_GetType), &msg_type, sizeof(msg_type), false);
+    UT_SetDataBuffer(UT_KEY(CFE_MSG_GetType), &msg_type, sizeof(msg_type), true);
 }
 
 static void UT_CFDP_SetupBasicTxState(CF_Logical_PduBuffer_t *pdu_buffer)
@@ -96,9 +96,12 @@ static void UT_CFDP_SetupBasicTxState(CF_Logical_PduBuffer_t *pdu_buffer)
     UT_SetDataBuffer(UT_KEY(CFE_SB_AllocateMessageBuffer), &bufptr, sizeof(bufptr), true);
 }
 
-static void UT_CFDP_SetupBasicTestState(UT_CF_Setup_t setup, CF_Logical_PduBuffer_t **pdu_buffer_p,
-                                        CF_Channel_t **channel_p, CF_History_t **history_p, CF_Transaction_t **txn_p,
-                                        CF_ConfigTable_t **config_table_p)
+static void UT_CFDP_SetupBasicTestState(UT_CF_Setup_t            setup,
+                                        CF_Logical_PduBuffer_t **pdu_buffer_p,
+                                        CF_Channel_t           **channel_p,
+                                        CF_History_t           **history_p,
+                                        CF_Transaction_t       **txn_p,
+                                        CF_ConfigTable_t       **config_table_p)
 {
     /*
      * fake objects used to pass into CF app during unit tests.
@@ -176,6 +179,9 @@ static void UT_CFDP_SetupBasicTestState(UT_CF_Setup_t setup, CF_Logical_PduBuffe
         ut_config_table.chan[UT_CFDP_CHANNEL].rx_max_messages_per_wakeup = 1;
     }
 
+    UT_SetDefaultReturnValue(UT_KEY(CF_GetChannelFromTxn),
+                             (UT_IntReturn_t)&CF_AppData.engine.channels[UT_CFDP_CHANNEL]);
+
     /* reset the event ID capture between each sub-case */
     UT_CF_ResetEventCapture();
 }
@@ -213,12 +219,11 @@ void Test_CF_CFDP_ReceiveMessage(void)
     /* Test case for:
      * void CF_CFDP_ReceiveMessage(CF_Channel_t *chan);
      */
-    CF_Channel_t *          chan;
-    CF_ConfigTable_t *      config;
-    CF_Transaction_t *      txn;
-    CF_Logical_PduBuffer_t *ph;
-    CFE_MSG_Type_t          msg_type = CFE_MSG_Type_Tlm;
-    size_t *                msg_size_buf;
+    CF_Channel_t     *chan;
+    CF_ConfigTable_t *config;
+    CF_Transaction_t *txn;
+    CFE_MSG_Type_t    msg_type;
+    CFE_MSG_Size_t    msg_size_buf;
 
     /* no-config - the max per wakeup will be 0, and this is a noop */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_NONE, NULL, &chan, NULL, NULL, NULL);
@@ -230,101 +235,22 @@ void Test_CF_CFDP_ReceiveMessage(void)
     UT_SetDeferredRetcode(UT_KEY(CFE_SB_ReceiveBuffer), 1, CFE_SB_NO_MESSAGE);
     UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
 
-    /* Set up with a zero size input message, this should fail decoding */
+    /* Set up with a zero size input message */
     msg_size_buf = 0;
-    UT_SetDeferredRetcode(UT_KEY(CF_CFDP_RecvPh), 1, -1);
+    msg_type     = CFE_MSG_Type_Tlm;
     UT_SetDataBuffer(UT_KEY(CFE_MSG_GetSize), &msg_size_buf, sizeof(msg_size_buf), false);
     UT_SetDataBuffer(UT_KEY(CFE_MSG_GetType), &msg_type, sizeof(msg_type), false);
     UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-    UT_ResetState(UT_KEY(CF_CFDP_RecvPh));
+    UtAssert_STUB_COUNT(CF_CFDP_ReceivePdu, 1); /* should be dispatched, this function checks size */
     UT_ResetState(UT_KEY(CFE_MSG_GetSize));
     UT_ResetState(UT_KEY(CFE_MSG_GetType));
 
     /*
-     *  - CF_CFDP_RecvPh() succeeds
-     *  - CF_FindTransactionBySequenceNumber() returns NULL
-     *  - CF_CFDP_FindUnusedTransaction() needs to return non-NULL
+     *  Nonzero size, Cmd framing
      */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, NULL, &chan, NULL, &txn, &config);
-    UT_SetHandlerFunction(UT_KEY(CF_FindUnusedTransaction), UT_AltHandler_GenericPointerReturn, txn);
     UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-    UtAssert_STUB_COUNT(CF_CFDP_DispatchRecv, 1); /* should be dispatched */
-    UtAssert_UINT32_EQ(txn->history->dir, CF_Direction_RX);
-    UtAssert_UINT32_EQ(txn->state_data.receive.r2.dc, CF_CFDP_FinDeliveryCode_INCOMPLETE);
-    UtAssert_UINT32_EQ(txn->state_data.receive.r2.fs, CF_CFDP_FinFileStatus_DISCARDED);
-
-    /* failure in CF_CFDP_RecvPh - nothing really happens here */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, NULL, &chan, NULL, &txn, &config);
-    UT_SetDeferredRetcode(UT_KEY(CF_CFDP_RecvPh), 1, -1);
-    UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-
-    /* Test the path where the function receives a telemetry packet on it's pipe */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, NULL, &chan, NULL, &txn, &config);
-    UT_SetDeferredRetcode(UT_KEY(CF_CFDP_RecvPh), 1, -1);
-    /* Override message type to take the command branch of the if then/else clause */
-    UT_ResetState(UT_KEY(CFE_MSG_GetType)); /* clears the previous cmd type */
-    UT_SetDataBuffer(UT_KEY(CFE_MSG_GetType), &msg_type, sizeof(msg_type), false);
-    UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-
-    /*
-     *  - CF_CFDP_RecvPh() succeeds
-     *  - CF_FindTransactionBySequenceNumber() returns non-NULL
-     */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, NULL, &chan, NULL, &txn, &config);
-    txn->state = CF_TxnState_R2;
-    UT_SetHandlerFunction(UT_KEY(CF_FindTransactionBySequenceNumber), UT_AltHandler_GenericPointerReturn, txn);
-    UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-    UtAssert_STUB_COUNT(CF_CFDP_DispatchRecv, 2);              /* should be dispatched */
-    UT_ResetState(UT_KEY(CF_FindTransactionBySequenceNumber)); /* clears it */
-
-    /* FIN handling special case */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, &ph, &chan, NULL, &txn, &config);
-    config->local_eid             = 123;
-    ph->pdu_header.source_eid     = config->local_eid;
-    ph->fdirective.directive_code = CF_CFDP_FileDirective_FIN;
-    chan->cur                     = txn;
-    UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-    UtAssert_UINT32_EQ(CF_AppData.hk.Payload.channel_hk[txn->chan_num].counters.recv.spurious, 1);
-    UtAssert_STUB_COUNT(CF_CFDP_SendAck, 1);
-    UtAssert_NULL(chan->cur); /* cleared */
-
-    /* FIN handling special case, but failure of CF_CFDP_RecvFin */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, &ph, &chan, NULL, &txn, &config);
-    UT_SetDeferredRetcode(UT_KEY(CF_CFDP_RecvFin), 1, -1);
-    config->local_eid             = 123;
-    ph->pdu_header.source_eid     = config->local_eid;
-    ph->fdirective.directive_code = CF_CFDP_FileDirective_FIN;
-    UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-    UtAssert_UINT32_EQ(CF_AppData.hk.Payload.channel_hk[txn->chan_num].counters.recv.spurious, 1); /* no increment */
-    UtAssert_STUB_COUNT(CF_CFDP_SendAck, 1);                                                       /* no increment */
-    UtAssert_NULL(chan->cur);                                                                      /* cleared */
-
-    /* FIN handling special case, but failure of CF_CFDP_SendAck */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, &ph, &chan, NULL, &txn, &config);
-    UT_SetDeferredRetcode(UT_KEY(CF_CFDP_SendAck), 1, CF_SEND_PDU_NO_BUF_AVAIL_ERROR);
-    config->local_eid             = 123;
-    ph->pdu_header.source_eid     = config->local_eid;
-    ph->fdirective.directive_code = CF_CFDP_FileDirective_FIN;
-    chan->cur                     = txn;
-    UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-    UtAssert_UINT32_EQ(CF_AppData.hk.Payload.channel_hk[txn->chan_num].counters.recv.spurious,
-                       2);               /* this does get increment */
-    UtAssert_ADDRESS_EQ(chan->cur, txn); /* not changed */
-
-    /* recv but not the correct destination_eid */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, &ph, &chan, NULL, &txn, &config);
-    config->local_eid              = 123;
-    ph->pdu_header.destination_eid = ~config->local_eid;
-    UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-    UT_CF_AssertEventID(CF_CFDP_INVALID_DST_ERR_EID);
-
-    /* recv correct destination_eid but CF_MAX_SIMULTANEOUS_RX hit */
-    UT_CFDP_SetupBasicTestState(UT_CF_Setup_RX, &ph, &chan, NULL, &txn, &config);
-    CF_AppData.hk.Payload.channel_hk[txn->chan_num].q_size[CF_QueueIdx_RX] = CF_MAX_SIMULTANEOUS_RX;
-    config->local_eid                                                      = 123;
-    ph->pdu_header.destination_eid                                         = config->local_eid;
-    UtAssert_VOIDCALL(CF_CFDP_ReceiveMessage(chan));
-    UT_CF_AssertEventID(CF_CFDP_RX_DROPPED_ERR_EID);
+    UtAssert_STUB_COUNT(CF_CFDP_ReceivePdu, 2); /* should be dispatched */
 }
 
 void Test_CF_CFDP_Send(void)
@@ -349,7 +275,7 @@ void Test_CF_CFDP_MsgOutGet(void)
      */
     CF_Transaction_t *txn;
     CF_ConfigTable_t *config;
-    CF_Channel_t *    chan;
+    CF_Channel_t     *chan;
 
     /* nominal */
     UT_CFDP_SetupBasicTestState(UT_CF_Setup_TX, NULL, NULL, NULL, &txn, NULL);

@@ -26,7 +26,7 @@
 #include "cf_app.h"
 #include "cf_cfdp_pdu.h"
 #include "cf_codec.h"
-#include "cf_events.h"
+#include "cf_eventids.h"
 
 #include <stdint.h>
 
@@ -37,10 +37,7 @@ typedef struct CF_Codec_BitField
 } CF_Codec_BitField_t;
 
 /* NBITS == number of bits */
-#define CF_INIT_FIELD(NBITS, SHIFT)                  \
-    {                                                \
-        .shift = (SHIFT), .mask = ((1 << NBITS) - 1) \
-    }
+#define CF_INIT_FIELD(NBITS, SHIFT) { .shift = (SHIFT), .mask = ((1 << NBITS) - 1) }
 
 /*
  * All CFDP sub-fields are fewer than 8 bits in size
@@ -78,7 +75,9 @@ static const CF_Codec_BitField_t CF_CFDP_PduHeader_FLAGS_LARGEFILE = CF_INIT_FIE
 /*
  * Fields within the "eid_tsn_lengths" byte of the PDU header
  */
+static const CF_Codec_BitField_t CF_CFDP_PduHeader_SEGMENTATION_CONTROL         = CF_INIT_FIELD(1, 7);
 static const CF_Codec_BitField_t CF_CFDP_PduHeader_LENGTHS_ENTITY               = CF_INIT_FIELD(3, 4);
+static const CF_Codec_BitField_t CF_CFDP_PduHeader_SEGMENT_METADATA             = CF_INIT_FIELD(1, 3);
 static const CF_Codec_BitField_t CF_CFDP_PduHeader_LENGTHS_TRANSACTION_SEQUENCE = CF_INIT_FIELD(3, 0);
 
 /*
@@ -141,9 +140,9 @@ static inline void CF_Codec_Store_uint8(CF_CFDP_uint8_t *pdst, uint8 val)
  *-----------------------------------------------------------------*/
 static inline void CF_Codec_Store_uint16(CF_CFDP_uint16_t *pdst, uint16 val)
 {
-    pdst->octets[1] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[0] = val & 0xFF;
+    pdst->octets[1]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[0]   = val & 0xFF;
 }
 
 /*----------------------------------------------------------------
@@ -153,13 +152,13 @@ static inline void CF_Codec_Store_uint16(CF_CFDP_uint16_t *pdst, uint16 val)
  *-----------------------------------------------------------------*/
 static inline void CF_Codec_Store_uint32(CF_CFDP_uint32_t *pdst, uint32 val)
 {
-    pdst->octets[3] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[2] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[1] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[0] = val & 0xFF;
+    pdst->octets[3]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[2]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[1]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[0]   = val & 0xFF;
 }
 
 /*----------------------------------------------------------------
@@ -169,21 +168,21 @@ static inline void CF_Codec_Store_uint32(CF_CFDP_uint32_t *pdst, uint32 val)
  *-----------------------------------------------------------------*/
 static inline void CF_Codec_Store_uint64(CF_CFDP_uint64_t *pdst, uint64 val)
 {
-    pdst->octets[7] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[6] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[5] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[4] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[3] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[2] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[1] = val & 0xFF;
-    val >>= 8;
-    pdst->octets[0] = val & 0xFF;
+    pdst->octets[7]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[6]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[5]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[4]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[3]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[2]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[1]   = val & 0xFF;
+    val             >>= 8;
+    pdst->octets[0]   = val & 0xFF;
 }
 
 /*----------------------------------------------------------------
@@ -205,9 +204,9 @@ static inline void CF_Codec_Load_uint16(uint16 *pdst, const CF_CFDP_uint16_t *ps
 {
     uint16 val = 0;
 
-    val |= psrc->octets[0];
+    val  |= psrc->octets[0];
     val <<= 8;
-    val |= psrc->octets[1];
+    val  |= psrc->octets[1];
 
     *pdst = val;
 }
@@ -221,13 +220,13 @@ static inline void CF_Codec_Load_uint32(uint32 *pdst, const CF_CFDP_uint32_t *ps
 {
     uint32 val = 0;
 
-    val |= psrc->octets[0];
+    val  |= psrc->octets[0];
     val <<= 8;
-    val |= psrc->octets[1];
+    val  |= psrc->octets[1];
     val <<= 8;
-    val |= psrc->octets[2];
+    val  |= psrc->octets[2];
     val <<= 8;
-    val |= psrc->octets[3];
+    val  |= psrc->octets[3];
 
     *pdst = val;
 }
@@ -241,21 +240,21 @@ static inline void CF_Codec_Load_uint64(uint64 *pdst, const CF_CFDP_uint64_t *ps
 {
     uint64 val = 0;
 
-    val |= psrc->octets[0];
+    val  |= psrc->octets[0];
     val <<= 8;
-    val |= psrc->octets[1];
+    val  |= psrc->octets[1];
     val <<= 8;
-    val |= psrc->octets[2];
+    val  |= psrc->octets[2];
     val <<= 8;
-    val |= psrc->octets[3];
+    val  |= psrc->octets[3];
     val <<= 8;
-    val |= psrc->octets[4];
+    val  |= psrc->octets[4];
     val <<= 8;
-    val |= psrc->octets[5];
+    val  |= psrc->octets[5];
     val <<= 8;
-    val |= psrc->octets[6];
+    val  |= psrc->octets[6];
     val <<= 8;
-    val |= psrc->octets[7];
+    val  |= psrc->octets[7];
 
     *pdst = val;
 }
@@ -356,7 +355,7 @@ void CF_EncodeIntegerInSize(CF_EncoderState_t *state, uint64 value, uint8 encode
         {
             --encode_size;
             --dptr;
-            *dptr = value & 0xFF;
+            *dptr   = value & 0xFF;
             value >>= 8;
         }
     }
@@ -383,7 +382,9 @@ void CF_CFDP_EncodeHeaderWithoutSize(CF_EncoderState_t *state, CF_Logical_PduHea
 
         /* The eid+tsn lengths are encoded as -1 */
         CF_Codec_Store_uint8(&(peh->eid_tsn_lengths), 0);
+        FSV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_SEGMENTATION_CONTROL, plh->segmentation_control);
         FSV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_LENGTHS_ENTITY, plh->eid_length - 1);
+        FSV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_SEGMENT_METADATA, plh->segment_meta_flag);
         FSV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_LENGTHS_TRANSACTION_SEQUENCE, plh->txn_seq_length - 1);
 
         /* NOTE: peh->length is NOT set here, as it depends on future encoding */
@@ -455,7 +456,7 @@ void CF_CFDP_EncodeFileDirectiveHeader(CF_EncoderState_t *state, CF_Logical_PduF
 void CF_CFDP_EncodeLV(CF_EncoderState_t *state, CF_Logical_Lv_t *pllv)
 {
     CF_CFDP_lv_t *lv; /* for encoding fixed sized fields */
-    void *        data_ptr;
+    void         *data_ptr;
 
     lv = CF_ENCODE_FIXED_CHUNK(state, CF_CFDP_lv_t);
     if (lv != NULL)
@@ -485,7 +486,7 @@ void CF_CFDP_EncodeLV(CF_EncoderState_t *state, CF_Logical_Lv_t *pllv)
 void CF_CFDP_EncodeTLV(CF_EncoderState_t *state, CF_Logical_Tlv_t *pltlv)
 {
     CF_CFDP_tlv_t *tlv; /* for encoding fixed sized fields */
-    void *         data_ptr;
+    void          *data_ptr;
 
     tlv = CF_ENCODE_FIXED_CHUNK(state, CF_CFDP_tlv_t);
     if (tlv != NULL)
@@ -597,7 +598,7 @@ void CF_CFDP_EncodeMd(CF_EncoderState_t *state, CF_Logical_PduMd_t *plmd)
 void CF_CFDP_EncodeFileDataHeader(CF_EncoderState_t *state, bool with_meta, CF_Logical_PduFileDataHeader_t *plfd)
 {
     CF_CFDP_PduFileDataHeader_t *fd;
-    CF_CFDP_uint8_t *            optional_fields;
+    CF_CFDP_uint8_t             *optional_fields;
 
     /* in this packet, the optional fields actually come first */
     if (with_meta)
@@ -748,7 +749,7 @@ uint64 CF_DecodeIntegerInSize(CF_DecoderState_t *state, uint8 decode_size)
         while (decode_size > 0)
         {
             temp_val <<= 8;
-            temp_val |= *sptr & 0xFF;
+            temp_val  |= *sptr & 0xFF;
             ++sptr;
             --decode_size;
         }
@@ -780,8 +781,10 @@ CFE_Status_t CF_CFDP_DecodeHeader(CF_DecoderState_t *state, CF_Logical_PduHeader
         plh->large_flag = FGV(peh->flags, CF_CFDP_PduHeader_FLAGS_LARGEFILE);
 
         /* The eid+tsn lengths are encoded as -1 */
-        plh->eid_length     = FGV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_LENGTHS_ENTITY) + 1;
-        plh->txn_seq_length = FGV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_LENGTHS_TRANSACTION_SEQUENCE) + 1;
+        plh->segmentation_control = FGV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_SEGMENTATION_CONTROL);
+        plh->eid_length           = FGV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_LENGTHS_ENTITY) + 1;
+        plh->segment_meta_flag    = FGV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_SEGMENT_METADATA);
+        plh->txn_seq_length       = FGV(peh->eid_tsn_lengths, CF_CFDP_PduHeader_LENGTHS_TRANSACTION_SEQUENCE) + 1;
 
         /* Length is a simple 16-bit quantity and refers to the content after this header */
         CF_Codec_Load_uint16(&(plh->data_encoded_length), &(peh->length));
@@ -922,7 +925,7 @@ void CF_CFDP_DecodeMd(CF_DecoderState_t *state, CF_Logical_PduMd_t *plmd)
 void CF_CFDP_DecodeFileDataHeader(CF_DecoderState_t *state, bool with_meta, CF_Logical_PduFileDataHeader_t *plfd)
 {
     const CF_CFDP_PduFileDataHeader_t *fd;
-    const CF_CFDP_uint8_t *            optional_fields;
+    const CF_CFDP_uint8_t             *optional_fields;
     uint8                              field_count;
 
     plfd->continuation_state        = 0;

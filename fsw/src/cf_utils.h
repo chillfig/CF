@@ -40,7 +40,7 @@ typedef struct CF_Traverse_TransSeqArg
 {
     CF_TransactionSeq_t transaction_sequence_number;
     CF_EntityId_t       src_eid;
-    CF_Transaction_t *  txn; /**< \brief output transaction pointer */
+    CF_Transaction_t   *txn; /**< \brief output transaction pointer */
 } CF_Traverse_TransSeqArg_t;
 
 /**
@@ -95,7 +95,7 @@ typedef void (*CF_TraverseAllTransactions_fn_t)(CF_Transaction_t *txn, void *con
 typedef struct CF_TraverseAll_Arg
 {
     CF_TraverseAllTransactions_fn_t fn;      /**< \brief internal callback to use for each CList_Traverse */
-    void *                          context; /**< \brief opaque object to pass to internal callback */
+    void                           *context; /**< \brief opaque object to pass to internal callback */
     int32                           counter; /**< \brief Running tally of all nodes traversed from all lists */
 } CF_TraverseAll_Arg_t;
 
@@ -145,8 +145,8 @@ static inline void CF_CList_Remove_Ex(CF_Channel_t *chan, CF_QueueIdx_t queueidx
     --CF_AppData.hk.Payload.channel_hk[chan - CF_AppData.engine.channels].q_size[queueidx];
 }
 
-static inline void CF_CList_InsertAfter_Ex(CF_Channel_t *chan, CF_QueueIdx_t queueidx, CF_CListNode_t *start,
-                                           CF_CListNode_t *after)
+static inline void
+CF_CList_InsertAfter_Ex(CF_Channel_t *chan, CF_QueueIdx_t queueidx, CF_CListNode_t *start, CF_CListNode_t *after)
 {
     CF_CList_InsertAfter(&chan->qs[queueidx], start, after);
     ++CF_AppData.hk.Payload.channel_hk[chan - CF_AppData.engine.channels].q_size[queueidx];
@@ -165,11 +165,12 @@ static inline void CF_CList_InsertBack_Ex(CF_Channel_t *chan, CF_QueueIdx_t queu
  *       chan must not be NULL.
  *
  * @param chan Pointer to the CF channel
+ * @param direction Intended direction of data flow (TX or RX)
  *
  * @returns Pointer to a free transaction
  * @retval  NULL if no free transactions available.
  */
-CF_Transaction_t *CF_FindUnusedTransaction(CF_Channel_t *chan);
+CF_Transaction_t *CF_FindUnusedTransaction(CF_Channel_t *chan, CF_Direction_t direction);
 
 /************************************************************************/
 /** @brief Returns a history structure back to its unused state.
@@ -193,8 +194,9 @@ void CF_ResetHistory(CF_Channel_t *chan, CF_History_t *history);
  *       txn must not be NULL.
  *
  * @param txn Pointer to the transaction object
+ * @param chan The channel number which this transaction is associated with
  */
-void CF_FreeTransaction(CF_Transaction_t *txn);
+void CF_FreeTransaction(CF_Transaction_t *txn, uint8 chan);
 
 /************************************************************************/
 /** @brief Finds an active transaction by sequence number.
@@ -213,7 +215,7 @@ void CF_FreeTransaction(CF_Transaction_t *txn);
  * @returns Pointer to the given transaction if found
  * @retval  NULL if the transaction is not found
  */
-CF_Transaction_t *CF_FindTransactionBySequenceNumber(CF_Channel_t *      chan,
+CF_Transaction_t *CF_FindTransactionBySequenceNumber(CF_Channel_t       *chan,
                                                      CF_TransactionSeq_t transaction_sequence_number,
                                                      CF_EntityId_t       src_eid);
 
@@ -516,6 +518,51 @@ CF_TxnStatus_t CF_TxnStatus_From_ConditionCode(CF_CFDP_ConditionCode_t cc);
  * @retval true if an error has occurred during the transaction
  * @retval false if no error has occurred during the transaction yet
  */
-bool CF_TxnStatus_IsError(CF_TxnStatus_t txn_stat);
+static inline bool CF_TxnStatus_IsError(CF_TxnStatus_t txn_stat)
+{
+    /* The value of CF_TxnStatus_UNDEFINED (-1) indicates a transaction is in progress and no error
+     * has occurred yet.  This will be set to CF_TxnStatus_NO_ERROR (0) after successful completion
+     * of the transaction (FIN/EOF).  Anything else indicates a problem has occurred. */
+    return (txn_stat > CF_TxnStatus_NO_ERROR);
+}
+
+/************************************************************************/
+/** @brief Gets the associated channel struct from a transaction
+ *
+ * @par Assumptions, External Events, and Notes:
+ *       txn must not be null, and the chan_num must be set
+ *
+ * @param txn   Transaction
+ *
+ * @returns Pointer to CF_Channel_t struct associated with the transaction
+ * @retval NULL if checks failed
+ */
+CF_Channel_t *CF_GetChannelFromTxn(CF_Transaction_t *txn);
+
+/************************************************************************/
+/** @brief Gets the head of the chunk list for the given channel + direction
+ *
+ * The chunk list contains structs that are available for tracking the chunks
+ * associated with files in transit.  An entry needs to be pulled from this
+ * list for every transaction, and returned to this list when the transaction
+ * completes.
+ *
+ * @param chan       Pointer to channel struct
+ * @param direction  Whether this is TX or RX
+ *
+ * @returns Pointer to list head
+ */
+CF_CListNode_t **CF_GetChunkListHead(CF_Channel_t *chan, uint8 direction);
+
+/************************************************************************/
+/** @brief Gets the status of this transaction
+ *
+ * Determines if the transaction is ACTIVE or TERMINATED.
+ * (By definition if it has a txn object then it is not UNRECOGNIZED)
+ *
+ * @param txn   Transaction
+ * @returns CF_CFDP_AckTxnStatus_t value corresponding to transaction
+ */
+CF_CFDP_AckTxnStatus_t CF_CFDP_GetAckTxnStatus(CF_Transaction_t *txn);
 
 #endif /* !CF_UTILS_H */

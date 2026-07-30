@@ -27,7 +27,7 @@
 
 #include "cf_dispatch.h"
 #include "cf_app.h"
-#include "cf_events.h"
+#include "cf_eventids.h"
 #include "cf_cmd.h"
 
 #include "cfe.h"
@@ -84,7 +84,7 @@ void CF_ProcessGroundCommand(const CFE_SB_Buffer_t *BufPtr)
         [CF_DISABLE_DEQUEUE_CC]     = sizeof(CF_DisableDequeueCmd_t),
         [CF_ENABLE_DIR_POLLING_CC]  = sizeof(CF_EnableDirPollingCmd_t),
         [CF_DISABLE_DIR_POLLING_CC] = sizeof(CF_DisableDirPollingCmd_t),
-        [CF_PURGE_QUEUE_CC]         = sizeof(CF_UnionArgs_Payload_t),
+        [CF_PURGE_QUEUE_CC]         = sizeof(CF_PurgeQueueCmd_t),
         [CF_ENABLE_ENGINE_CC]       = sizeof(CF_EnableEngineCmd_t),
         [CF_DISABLE_ENGINE_CC]      = sizeof(CF_DisableEngineCmd_t),
     };
@@ -109,15 +109,20 @@ void CF_ProcessGroundCommand(const CFE_SB_Buffer_t *BufPtr)
         }
         else
         {
-            CFE_EVS_SendEvent(CF_CMD_LEN_ERR_EID, CFE_EVS_EventType_ERROR,
-                              "CF: invalid ground command length for command 0x%02x, expected %d got %zd", cmd,
-                              expected_lengths[cmd], len);
+            CFE_EVS_SendEvent(CF_CMD_LEN_ERR_EID,
+                              CFE_EVS_EventType_ERROR,
+                              "CF: invalid ground command length for command 0x%02x, expected %d got %zd",
+                              cmd,
+                              expected_lengths[cmd],
+                              len);
             ++CF_AppData.hk.Payload.counters.err;
         }
     }
     else
     {
-        CFE_EVS_SendEvent(CF_CC_ERR_EID, CFE_EVS_EventType_ERROR, "CF: invalid ground command packet cmd_code=0x%02x",
+        CFE_EVS_SendEvent(CF_CC_ERR_EID,
+                          CFE_EVS_EventType_ERROR,
+                          "CF: invalid ground command packet cmd_code=0x%02x",
                           cmd);
         ++CF_AppData.hk.Payload.counters.err;
     }
@@ -131,28 +136,44 @@ void CF_ProcessGroundCommand(const CFE_SB_Buffer_t *BufPtr)
  *-----------------------------------------------------------------*/
 void CF_AppPipe(const CFE_SB_Buffer_t *BufPtr)
 {
-    CFE_SB_MsgId_t MessageID = CFE_SB_INVALID_MSG_ID;
+    static CFE_SB_MsgId_t CMD_MID     = CFE_SB_MSGID_RESERVED;
+    static CFE_SB_MsgId_t SEND_HK_MID = CFE_SB_MSGID_RESERVED;
+    static CFE_SB_MsgId_t WAKE_UP_MID = CFE_SB_MSGID_RESERVED;
 
-    CFE_MSG_GetMsgId(&BufPtr->Msg, &MessageID);
+    CFE_SB_MsgId_t MsgId = CFE_SB_INVALID_MSG_ID;
 
-    switch (CFE_SB_MsgIdToValue(MessageID))
+    /* cache the local MID Values here, this avoids repeat lookups */
+    if (!CFE_SB_IsValidMsgId(CMD_MID))
     {
-        case CF_CMD_MID:
-            CF_ProcessGroundCommand(BufPtr);
-            break;
+        CMD_MID     = CFE_SB_ValueToMsgId(CF_CMD_MID);
+        SEND_HK_MID = CFE_SB_ValueToMsgId(CF_SEND_HK_MID);
+        WAKE_UP_MID = CFE_SB_ValueToMsgId(CF_WAKE_UP_MID);
+    }
 
-        case CF_WAKE_UP_MID:
-            CF_WakeupCmd((const CF_WakeupCmd_t *)BufPtr);
-            break;
+    CFE_MSG_GetMsgId(&BufPtr->Msg, &MsgId);
 
-        case CF_SEND_HK_MID:
-            CF_SendHkCmd((const CF_SendHkCmd_t *)BufPtr);
-            break;
-
-        default:
-            ++CF_AppData.hk.Payload.counters.err;
-            CFE_EVS_SendEvent(CF_MID_ERR_EID, CFE_EVS_EventType_ERROR, "CF: invalid command packet id=0x%lx",
-                              (unsigned long)CFE_SB_MsgIdToValue(MessageID));
-            break;
+    /* Process all SB messages */
+    if (CFE_SB_MsgId_Equal(MsgId, WAKE_UP_MID))
+    {
+        /* Periodic Wakeup */
+        CF_WakeupCmd((const CF_WakeupCmd_t *)BufPtr);
+    }
+    else if (CFE_SB_MsgId_Equal(MsgId, SEND_HK_MID))
+    {
+        /* Housekeeping request */
+        CF_SendHkCmd((const CF_SendHkCmd_t *)BufPtr);
+    }
+    else if (CFE_SB_MsgId_Equal(MsgId, CMD_MID))
+    {
+        /* Ground command */
+        CF_ProcessGroundCommand(BufPtr);
+    }
+    else
+    {
+        ++CF_AppData.hk.Payload.counters.err;
+        CFE_EVS_SendEvent(CF_MID_ERR_EID,
+                          CFE_EVS_EventType_ERROR,
+                          "CF: invalid command packet id=0x%lx",
+                          (unsigned long)CFE_SB_MsgIdToValue(MsgId));
     }
 }
